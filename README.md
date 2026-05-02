@@ -1,0 +1,2 @@
+# xTechno
+generator nicknames
