@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NickForge — Генератор никнеймов</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --accent3: #06b6d4;
+    --accent-glow: rgba(124,58,237,0.25);
+    --text: #f0eeff;
+    --text-muted: #7a7a9a;
+    --text-dim: #4a4a6a;
+    --tag-bg: #1e1e2e;
+    --tag-active: #2d1f5e;
+    --success: #10b981;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(124,58,237,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(6,182,212,0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  header {
+    text-align: center;
+    padding: 50px 0 40px;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 16px 6px 10px;
+    margin-bottom: 24px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent2);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: none;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  textarea::placeholder { color: var(--text-dim); }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+  .tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .tag {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    color: var(--text-muted);
+  }
+
+  .tag:hover { border-color: var(--accent); color: var(--text); }
+  .tag.active { background: var(--tag-active); border-color: var(--accent); color: var(--accent2); }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; opacity: 0.5; }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 540px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .setting-block label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-muted);
+    user-select: none;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .pill:hover { color: var(--text); border-color: var(--accent); }
+  .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    margin-bottom: 6px;
+  }
+
+  .toggle-row:hover { border-color: var(--accent); }
+  .toggle-row:last-child { margin-bottom: 0; }
+  .toggle-label { font-size: 0.85rem; color: var(--text-muted); }
+
+  .toggle-switch {
+    width: 36px; height: 20px;
+    background: var(--border);
+    border-radius: 100px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle-row.on .toggle-switch { background: var(--accent); }
+  .toggle-row.on .toggle-switch::after { transform: translateX(16px); }
+
+  .count-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+  }
+
+  .count-label { font-size: 0.85rem; color: var(--text-muted); flex: 1; }
+  .count-controls { display: flex; align-items: center; gap: 10px; }
+
+  .count-btn {
+    width: 28px; height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .count-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .count-val { font-size: 1rem; font-weight: 700; min-width: 20px; text-align: center; font-family: 'Space Mono', monospace; }
+
+  .generate-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .generate-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .generate-btn:hover::before { opacity: 1; }
+  .generate-btn:active { transform: scale(0.99); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .results-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-title { font-weight: 700; font-size: 0.95rem; }
+  .results-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    background: var(--tag-active);
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+
+  .nick-list { padding: 8px 0; }
+
+  .nick-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    transition: background 0.15s;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  .nick-item:last-child { border-bottom: none; }
+  .nick-item:hover { background: var(--surface2); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .nick-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .nick-actions { display: flex; align-items: center; gap: 10px; }
+
+  .nick-style-badge {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    max-width: 160px;
+    text-align: right;
+  }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .copy-btn.copied { border-color: var(--success); color: var(--success); }
+
+  footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+  }
+
+  @media (max-width: 600px) {
+    .nick-style-badge { display: none; }
+    .nick-name { font-size: 0.95rem; }
+  }
+
+  .stagger-1{animation-delay:.05s}.stagger-2{animation-delay:.1s}.stagger-3{animation-delay:.15s}
+  .stagger-4{animation-delay:.2s}.stagger-5{animation-delay:.25s}.stagger-6{animation-delay:.3s}
+  .stagger-7{animation-delay:.35s}.stagger-8{animation-delay:.4s}.stagger-9{animation-delay:.45s}
+  .stagger-10{animation-delay:.5s}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">
+      <div class="logo-dot"></div>
+      xTechno
+    </div>
+    <h1>Генератор<br><span>никнеймов</span></h1>
+    <p class="subtitle">Выбери интересы и настройки — получи уникальный ник мгновенно</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">01 — Твои интересы</div>
+    <div class="tags-grid" id="tagsGrid">
+      <span class="tag" data-val="gaming">🎮 Гейминг</span>
+      <span class="tag" data-val="anime">⛩ Аниме</span>
+      <span class="tag" data-val="music">🎵 Музыка</span>
+      <span class="tag" data-val="art">🎨 Арт</span>
+      <span class="tag" data-val="tech">💻 Технологии</span>
+      <span class="tag" data-val="nature">🌿 Природа</span>
+      <span class="tag" data-val="space">🚀 Космос</span>
+      <span class="tag" data-val="fantasy">⚔️ Фэнтези</span>
+      <span class="tag" data-val="sport">⚽ Спорт</span>
+      <span class="tag" data-val="cinema">🎬 Кино</span>
+      <span class="tag" data-val="books">📚 Книги</span>
+      <span class="tag" data-val="cooking">🍜 Еда</span>
+      <span class="tag" data-val="travel">✈️ Путешествия</span>
+      <span class="tag" data-val="cyberpunk">🤖 Киберпанк</span>
+      <span class="tag" data-val="horror">🕷 Хоррор</span>
+      <span class="tag" data-val="mythology">🧿 Мифология</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">02 — Настройки</div>
+    <div class="settings-grid">
+
+      <div class="setting-block">
+        <label>Стиль</label>
+        <div class="pill-group" id="styleGroup">
+          <span class="pill active" data-val="cool">Крутой</span>
+          <span class="pill" data-val="mysterious">Загадочный</span>
+          <span class="pill" data-val="cute">Милый</span>
+          <span class="pill" data-val="epic">Эпичный</span>
+          <span class="pill" data-val="funny">Смешной</span>
+        </div>
+      </div>
+
+      <div class="setting-block">
+        <label>Длина</label>
+        <div class="pill-group" id="lengthGroup">
+          <span class="pill" data-val="short">Короткий</span>
+          <span class="pill active" data-val="medium">Средний</span>
+          <span class="pill" data-val="long">Длинный</span>
+        </div>
+      </div>
+
+      <div class="setting-block">
+        <label>Язык</label>
+        <div class="pill-group" id="langGroup">
+          <span class="pill active" data-val="en">English</span>
+          <span class="pill" data-val="ru">Русский</span>
+        </div>
+      </div>
+
+      <div class="setting-block">
+        <label>Дополнительно</label>
+        <div class="toggle-row" id="toggleNumbers">
+          <span class="toggle-label">использование цифр</span>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row" id="toggleSymbols">
+          <span class="toggle-label">использование символов</span>
+          <div class="toggle-switch"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">03 — Количество результатов</div>
+    <div class="count-row">
+      <span class="count-label">Никнеймов на выходе</span>
+      <div class="count-controls">
+        <button class="count-btn" id="countMinus">−</button>
+        <span class="count-val" id="countVal">8</span>
+        <button class="count-btn" id="countPlus">+</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generate()">
+      ⚡ Сгенерировать никнеймы
+    </button>
+  </div>
+
+  <div id="resultsWrap"></div>
+
+  <footer>Все права защищены 2026</footer>
+</div>
+
+<script>
+const state = {
+  interests: [],
+  style: 'cool',
+  length: 'medium',
+  lang: 'en',
+  numbers: false,
+  symbols: false,
+  count: 8
+};
+
+// ───── Word Banks ─────
+const words = {
+  gaming: {
+    en: ['blade','pixel','frag','nexus','spawn','glitch','raid','loot','quest','snipe','pwn','clutch','rush','scope','recoil','arena','turret','respawn','hitbox','ranked','burst','strafe','combo','meta','vault','siege','shard','rift','forge','blight','tank','healer','carry','jungler','midlane','topfrag','backstab','parry','dodge','roll','stance','ulti','cooldown','flashbang','grenade','claymore','crossbow','longbow','dagger','katana','shield','armor','relic','helm','gauntlet','buckler','rune','glyph','mana','health','stamina','potion','buff','debuff','nerf','patch','queue','lobby','ping','lag','render','texture','shader','engine','server','client','host','match','score','rating','elo','tier','division','platinum','diamond','master','apex','grandmaster','champion','seasonal','casual','unranked','bronze','silver','gold'],
+    ru: ['клинок','фраг','рейд','квест','прицел','арена','ульта','ранг','щит','броня','руна','мана','снайпер','фланг','босс','данж','клан','альянс','матч','рейтинг','чемпион','легенда','комбо','уклон','блок','стойка','аура','фантом','раптор','хищник','стрела','молот','топор','меч','лук','булава']
+  },
+  anime: {
+    en: ['sakura','katana','ryuu','kage','hikari','yami','oni','tsuki','hoshi','akira','kira','zero','neko','miko','senpai','sensei','kohai','baka','kawaii','sugoi','yuki','ryu','ken','jin','ren','rei','kai','sora','tora','shiro','kuro','aoi','hana','momo','yume','kokoro','tamashi','chikara','yuusha','mahou','jutsu','kekkei','chakra','byakugan','sharingan','bankai','zanpakuto','shikai','hollow','quincy','shinigami','espada','vizard','fullbring','reiatsu','hakuda','hoho','kido','zanjutsu','seireitei','hueco','mundo','soul','society','kaizoku','nakama','mugiwara','gomu','haki','zoan','logia','paramecia','conqueror','armament','observation','rokushiki','geppo','soru','rankyaku','shigan','tekkai','kami','e','tenryuu','shichibukai','warlord','yonko','rookie','supernova','shinobi','chunin','jonin','anbu','bijuu','jinchuriki','rasengan','chidori','susanoo'],
+    ru: ['сакура','катана','тень','свет','звезда','дракон','кицунэ','тануки','ёкай','самурай','ниндзя','шиноби','мастер','призрак','воин','охотник','демон','ангел','герой','легенда','миф','рёку','кагэ','хикари','ками','тора','сора','куро','широ','аои','хана','юкки','рэй','кэн','рюу']
+  },
+  music: {
+    en: ['bass','beat','riff','chord','drop','rave','tempo','vinyl','flux','echo','lyre','vibe','track','wave','pitch','amp','synth','treble','snare','kick','hihat','loop','sample','bpm','daw','midi','oscillator','filter','reverb','delay','chorus','flanger','phaser','compressor','limiter','eq','gain','db','frequency','waveform','analog','digital','distortion','overdrive','fuzz','wah','tremolo','vibrato','arpeggio','scale','mode','key','major','minor','pentatonic','chromatic','diatonic','cadence','coda','verse','bridge','hook','outro','intro','breakdown','buildup','acid','house','techno','trance','drum','jungle','garage','grime','dubstep','trap','lofi','jazz','blues','funk','soul','gospel','rock','metal','punk','indie','folk','country','classical','orchestral','chamber','symphony','concerto','sonata','etude','nocturne','prelude','fugue','canon','waltz','tango','salsa','reggae','ska','dub','dancehall','afrobeat','bossa'],
+    ru: ['бас','бит','рифф','ритм','волна','вибе','трек','синт','петля','семпл','темп','аккорд','тональность','мелодия','гармония','вокал','хор','куплет','припев','бридж','соло','пауза','финал','вступление','аутро','сабвуфер','колонка','усилитель','пульт','студия','запись','сведение','мастеринг','концерт','тур','альбом','сингл','плейлист','стриминг']
+  },
+  art: {
+    en: ['sketch','brush','hue','prism','canvas','noir','vivid','shade','glitch','pixel','blur','mono','chrome','ink','void','palette','pigment','tint','tone','value','saturation','contrast','composition','perspective','vanishing','horizon','foreground','background','midground','texture','pattern','motif','symbol','icon','glyph','typography','serif','sans','kerning','leading','tracking','layout','grid','whitespace','negative','positive','gestalt','surreal','abstract','realism','impressionism','expressionism','cubism','futurism','dada','bauhaus','pop','minimal','concept','installation','performance','video','digital','generative','algorithmic','parametric','fractal','recursive','iterative','modular','systemic','procedural','random','noise','gradient','mesh','wireframe','render','raytrace','raster','vector','svg','bitmap','resolution','dpi','ppi','aspect','ratio','crop','mask','layer','blend','opacity','mode','multiply','screen','overlay','dodge','burn','emboss','sharpen','soften'],
+    ru: ['эскиз','кисть','призма','холст','оттенок','тень','палитра','пигмент','контраст','текстура','узор','символ','типография','макет','сетка','абстракт','реализм','импрессионизм','сюрреализм','минимализм','концепт','инсталляция','цифровой','вектор','растр','слой','маска','режим','наложение','прозрачность','резкость','размытие','фокус','глубина']
+  },
+  tech: {
+    en: ['null','void','hex','byte','core','root','sudo','fork','node','hash','cache','stack','loop','ping','token','proxy','matrix','kernel','thread','process','daemon','socket','buffer','queue','heap','pointer','array','vector','map','set','tree','graph','edge','vertex','leaf','depth','breadth','recursion','iteration','function','method','class','object','instance','interface','abstract','inherit','polymorphic','encapsulate','compile','runtime','debug','trace','log','monitor','alert','threshold','latency','throughput','bandwidth','packet','frame','protocol','handshake','cipher','encrypt','decrypt','salt','pepper','session','cookie','header','payload','endpoint','api','rest','graphql','websocket','grpc','microservice','container','docker','kubernetes','orchestrate','deploy','pipeline','ci','cd','devops','agile','scrum','sprint','backlog','kanban','ticket','commit','branch','merge','pull','push','clone','fetch','rebase','diff','patch','version','release','hotfix','rollback','rollout','canary','blue','green','chaos','resilience','fault','tolerance','redundancy','failover','cluster','shard','replica','partition','consistency','availability','durability','atomicity','isolation'],
+    ru: ['байт','ядро','сеть','код','пинг','матрица','петля','поток','процесс','буфер','очередь','стек','граф','дерево','массив','функция','метод','класс','объект','интерфейс','компиляция','отладка','трассировка','журнал','мониторинг','задержка','пропускная','пакет','протокол','шифрование','токен','сессия','конечная','точка','контейнер','оркестрация','развёртка','пайплайн','версия','релиз','откат','кластер','реплика','раздел','консистентность','доступность','атомарность']
+  },
+  nature: {
+    en: ['storm','frost','ember','cedar','wolf','raven','fox','hawk','ash','thorn','cliff','river','dusk','dawn','mist','gale','ridge','peak','summit','vale','grove','brook','creek','delta','estuary','glacier','avalanche','blizzard','hurricane','tornado','cyclone','typhoon','monsoon','drought','flood','wildfire','eruption','tremor','tsunami','aurora','eclipse','equinox','solstice','zenith','nadir','horizon','twilight','midnight','noon','tide','current','eddy','vortex','whirlpool','cascade','rapids','torrent','spring','summer','autumn','winter','bloom','blossom','wither','decay','fertile','barren','arid','lush','verdant','dense','sparse','ancient','primal','raw','untamed','wild','feral','serene','tranquil','peaceful','majestic','sublime','vast','infinite','eternal','timeless','primordial','elemental','mineral','crystal','quartz','obsidian','granite','marble','limestone','sandstone','basalt','flint','jasper','amber','onyx','tourmaline','amethyst','sapphire','emerald','topaz','opal','agate','coral','pearl','shell','driftwood','moss','lichen','fern','ivy','vine','bamboo','willow','birch','oak','maple','pine','spruce','sequoia','redwood','mangrove','lotus','orchid','thistle','sage','lavender','thyme','rosemary','basil'],
+    ru: ['шторм','иней','волк','ворон','лиса','ястреб','туман','рассвет','хребет','пик','вершина','долина','роща','ручей','дельта','ледник','лавина','ураган','торнадо','засуха','наводнение','извержение','цунами','аврора','затмение','прилив','водоворот','каскад','весна','лето','осень','зима','цветение','увядание','дикий','нетронутый','серенький','величественный','бесконечный','вечный','кристалл','обсидиан','гранит','кварц','янтарь','коралл','жемчуг','мох','папоротник','плющ','берёза','дуб','ель','сосна','ива','лотос','орхидея','шалфей','лаванда','тимьян']
+  },
+  space: {
+    en: ['nova','orbit','pulsar','comet','vega','lyra','zenith','cosmo','quasar','nebula','void','cosmos','astro','solaris','lunar','eclipse','galaxy','cluster','filament','dark','matter','energy','singularity','horizon','redshift','blueshift','parallax','magnitude','luminosity','spectral','binary','trinary','multiple','variable','neutron','white','dwarf','red','giant','supergiant','hypergiant','protostar','brown','planetoid','asteroid','meteoroid','meteor','meteorite','coma','nucleus','perihelion','aphelion','elliptical','parabolic','hyperbolic','resonance','lagrange','trojan','greek','kuiper','oort','heliopause','heliosphere','magnetosphere','ionosphere','exosphere','thermosphere','mesosphere','stratosphere','troposphere','aurora','borealis','australis','corona','chromosphere','photosphere','granule','sunspot','flare','prominence','coronal','mass','ejection','solar','wind','interplanetary','interstellar','intergalactic','cosmic','microwave','background','radiation','age','reionization','epoch','inflation','big','bang','multiverse','parallel','dimension','wormhole','alcubierre','hawking','schwarzschild','kerr','newman','reissner','nordstrom'],
+    ru: ['нова','орбита','комета','космос','зенит','туманность','затмение','галактика','кластер','тёмная','материя','энергия','сингулярность','горизонт','нейтронная','белый','карлик','красный','гигант','протозвезда','астероид','метеор','метеорит','хвост','перигелий','афелий','резонанс','ионосфера','экзосфера','аврора','корона','вспышка','солнечный','ветер','межзвёздный','космический','фон','радиация','инфляция','мультивселенная','червоточина']
+  },
+  fantasy: {
+    en: ['vex','rune','arcane','shade','wraith','ember','drake','iron','grim','vale','elder','myth','saga','relic','frost','dread','sorcerer','wizard','warlock','witch','druid','shaman','paladin','cleric','priest','monk','ranger','archer','rogue','assassin','thief','bard','minstrel','herald','knight','squire','lord','duke','baron','king','queen','emperor','empress','chancellor','regent','sentinel','guardian','warden','keeper','seeker','wanderer','pilgrim','omen','prophecy','oracle','seer','vision','dream','curse','blessing','seal','ward','glyph','sigil','cipher','codex','tome','grimoire','scroll','tablet','artifact','talisman','amulet','charm','token','badge','crest','banner','coat','arms','heraldry','motto','vow','oath','pact','covenant','blood','silver','gold','mithril','adamantine','orichalcum','dragonscale','elfwood','dwarven','elven','orcish','undead','undying','immortal','eternal','ancient','primordial','forgotten','lost','hidden','secret','forbidden','cursed','blessed','holy','divine','infernal','abyssal','ethereal','astral','shadow','light','chaos','order','balance','fate','destiny','fortune','luck','doom','glory','honor','valor','courage','wisdom','strength','agility','endurance','willpower','charisma','arcana','nature','subterfuge','destruction','conjuration','illusion','transmutation','abjuration','evocation','necromancy','enchantment','divination'],
+    ru: ['руна','тень','призрак','жар','дракон','мрак','миф','сага','колдун','маг','ведьма','жрец','паладин','следопыт','плут','бард','рыцарь','лорд','король','герцог','барон','хранитель','страж','искатель','пилигрим','пророчество','оракул','видение','проклятие','благословение','артефакт','реликвия','талисман','амулет','свиток','гримуар','кодекс','мифрил','адамантин','драконья','эльфийская','гномья','нежить','бессмертный','древний','забытый','запретный','проклятый','святой','хаос','порядок','судьба','удача','слава','честь','доблесть','мудрость','сила','воля']
+  },
+  sport: {
+    en: ['blaze','titan','rush','clutch','spike','drive','grit','iron','bolt','force','grind','track','hype','surge','rival','champion','contender','challenger','underdog','favorite','outsider','sprinter','marathon','relay','hurdle','vault','javelin','discus','hammer','shot','put','decathlon','pentathlon','triathlon','duathlon','aquathlon','biathlon','cross','country','alpine','nordic','freestyle','downhill','slalom','giant','super','combined','snowboard','halfpipe','mogul','aerials','luge','bobsled','skeleton','curling','hockey','figure','short','speed','skating','ski','jumping','pursuit','mass','start','interval','sprint','handicap','team','individual','knockout','bracket','seeding','wild','card','playoff','semifinal','final','grand','prix','series','circuit','league','division','conference','cup','trophy','medal','podium','glory','victory','defeat','draw','overtime','penalty','shootout','corner','free','throw','slam','dunk','assist','rebound','block','steal','turnover','foul','technical','flagrant','ejection','suspension','transfer','contract','roster','lineup','formation','tactics','strategy','press','trap','offside','flag'],
+    ru: ['блейз','титан','рывок','хватка','шип','напор','стойкость','гранит','молния','сила','труд','трек','хайп','прибой','соперник','чемпион','претендент','темная','лошадка','спринтер','марафон','эстафета','барьер','прыжок','метание','диск','молот','ядро','многоборье','троеборье','хоккей','фигурное','скоростное','лыжи','биатлон','кёрлинг','волейбол','баскетбол','футбол','теннис','боксёр','боец','борец','гимнаст','пловец','велосипедист','атлет','команда','клуб','лига','кубок','медаль','подиум','победа','поражение','ничья','штраф','угловой']
+  },
+  cinema: {
+    en: ['reel','scene','noir','flash','fade','lens','frame','cut','dusk','dune','arc','saga','icon','epic','vhs','cult','director','producer','screenplay','script','dialogue','monologue','soliloquy','aside','exposition','rising','action','climax','falling','resolution','denouement','protagonist','antagonist','anti','hero','villain','foil','mentor','herald','threshold','guardian','shapeshifter','trickster','shadow','ally','comic','relief','love','interest','innocent','seeker','ordinary','world','call','adventure','refusal','meeting','supernatural','crossing','tests','enemies','approach','ordeal','reward','road','back','resurrection','elixir','return','cinematography','lighting','contrast','color','grade','palette','composition','rule','thirds','golden','ratio','leading','lines','framing','depth','field','focus','pull','rack','dolly','crane','steadicam','handheld','aerial','establishing','cutaway','reaction','shot','close','medium','wide','extreme','insert','point','view','over','shoulder','two','three','ensemble','tracking','whip','pan','tilt','zoom','push','montage','cross','match','jump','smash','continuity','ellipsis','parallel','editing','rhythm','pacing','beat','pause','silence','ambient','score','original','soundtrack','leitmotif','theme','underscore','replacement'],
+    ru: ['кадр','сцена','нуар','вспышка','линза','сага','икона','культ','режиссёр','сценарист','диалог','монолог','экспозиция','кульминация','развязка','протагонист','антагонист','злодей','наставник','порог','испытание','награда','возвращение','операторская','освещение','тень','контраст','цвет','монтаж','темп','пауза','тишина','саундтрек','лейтмотив','тема','атмосфера']
+  },
+  books: {
+    en: ['lore','sage','tome','rune','verse','myth','scribe','page','fable','quill','ode','arc','glyph','canon','epoch','chapter','volume','edition','manuscript','codex','scroll','tablet','inscription','annotation','footnote','bibliography','index','appendix','prologue','epilogue','foreword','afterword','preface','introduction','dedication','epigraph','protagonist','antagonist','narrator','point','view','first','second','third','omniscient','unreliable','stream','consciousness','interior','monologue','free','indirect','discourse','dialogue','soliloquy','metaphor','simile','allegory','symbolism','irony','satire','parody','pastiche','intertextuality','allusion','motif','theme','leitmotif','archetype','trope','convention','genre','subgenre','speculative','dystopian','utopian','post','apocalyptic','cli','fi','hard','soft','space','opera','military','cyberpunk','steampunk','biopunk','solarpunk','hopepunk','grimdark','dark','epic','sword','sorcery','urban','paranormal','cozy','noir','hardboiled','police','procedural','psychological','thriller','gothic','southern','literary','fiction','magical','realism','surrealism','absurdism','existentialism','modernism','postmodernism','romanticism','naturalism','transcendentalism','imagism'],
+    ru: ['лор','мудрец','том','стих','миф','свиток','басня','перо','эпоха','глава','рукопись','кодекс','надпись','аннотация','пролог','эпилог','предисловие','посвящение','эпиграф','рассказчик','метафора','аллегория','символизм','ирония','сатира','пародия','интертекст','мотив','архетип','жанр','утопия','дистопия','постапокалипсис','фантастика','мистика','детектив','триллер','готика','магический','реализм','сюрреализм','модернизм','постмодернизм','романтизм','натурализм']
+  },
+  cooking: {
+    en: ['spice','umami','flare','zest','crisp','glaze','broth','sear','miso','brine','char','roux','salt','forge','smoke','simmer','braise','poach','blanch','saute','deglaze','reduce','emulsify','fold','cream','whip','knead','proof','ferment','cure','pickle','marinate','season','rest','carve','portion','plate','garnish','dress','sauce','drizzle','dust','crust','crumb','batter','dough','paste','puree','mousse','foam','gel','sphere','emulsion','reduction','infusion','extract','essence','tincture','distillate','concentrate','stock','fond','jus','gravy','bechamel','veloute','espagnole','hollandaise','vinaigrette','aioli','romesco','chimichurri','gremolata','persillade','salsa','verde','roja','mojo','harissa','chermoula','dukkah','za','atar','ras','el','hanout','garam','masala','curry','sambal','nam','prik','gochujang','doenjang','mirin','dashi','kombu','katsuobushi','nori','wakame','bonito','shoyu','ponzu','teriyaki','yakitori','tempura','tonkatsu','ramen','udon','soba','pho','laksa','rendang','nasi','lemak','pad','thai','larb','papaya','salad','bibimbap','kimchi','banchan','japchae','tteokbokki','gyoza','xiaolongbao','mapo','tofu','peking','duck','siu'],
+    ru: ['специя','умами','жар','хрустящий','глазурь','дым','соль','бульон','маринад','рассол','соус','крем','тесто','пюре','мусс','пена','эссенция','настойка','концентрат','жаркое','тушёное','варёное','жареное','запечённое','гриль','копчёное','маринованное','квашеное','ферментированное','сезон','гарнир','заправка','подливка','бешамель','велюте','эспаньол','голландез','винегрет','айоли','сальса','чимичурри','карри','самбал','рамен','удон','соба','фо','кимчи','гёдза','тофу','утка','свинина','говядина','баранина','курица','рыба','морепродукты']
+  },
+  travel: {
+    en: ['drift','roam','peak','crest','ridge','atlas','pilot','nomad','route','haven','cove','port','dune','helm','trek','wander','explore','discover','journey','voyage','expedition','odyssey','quest','pilgrimage','adventure','itinerary','waypoint','landmark','monument','heritage','culture','cuisine','festival','carnival','bazaar','market','souk','medina','kasbah','riad','villa','palace','castle','citadel','fortress','rampart','tower','minaret','spire','dome','arch','plaza','square','promenade','boulevard','avenue','lane','alley','passage','arcade','gallery','atrium','courtyard','cloister','terrace','balcony','veranda','pergola','gazebo','pavilion','kiosk','bridge','viaduct','aqueduct','dam','lock','ferry','harbor','marina','pier','jetty','quay','wharf','dock','lighthouse','beacon','buoy','channel','strait','bay','gulf','fjord','inlet','estuary','delta','lagoon','atoll','reef','archipelago','peninsula','cape','promontory','bluff','headland','cliff','gorge','canyon','ravine','gully','valley','plateau','mesa','butte','badlands','prairie','steppe','savanna','jungle','rainforest','mangrove','tundra','taiga','boreal','desert','oasis','wadi','erg','reg','hammada','serir','yardang','ventifact','inselberg','tor','scree','talus','moraine','cirque','corrie','cwm','arête','col','pass','saddle','escarpment','cuesta','hogback','flatiron','dike','sill','laccolith','batholith','pluton','stock','boss','horst','graben','rift','fault','scarp','beach','bar','spit','tombolo','barrier','island'],
+    ru: ['дрейф','роум','пик','атлас','номад','маршрут','бухта','дюна','трек','скиталец','исследователь','путешественник','мореход','паломник','приключение','ориентир','памятник','наследие','культура','карнавал','базар','рынок','медина','вилла','дворец','замок','крепость','башня','минарет','купол','арка','площадь','бульвар','переулок','мост','виадук','акведук','паром','гавань','пристань','маяк','буй','пролив','залив','фьорд','лагуна','атолл','риф','архипелаг','полуостров','мыс','утёс','ущелье','каньон','долина','плато','прерия','степь','саванна','джунгли','тундра','тайга','пустыня','оазис']
+  },
+  cyberpunk: {
+    en: ['neon','chrome','syn','grid','jack','wire','glitch','hack','rez','data','volt','cipher','daemon','rogue','shift','ghost','cyber','punk','corp','street','samurai','razor','edge','blade','steel','cable','fiber','optic','neural','link','interface','implant','augment','enhance','modify','upgrade','overclock','overheat','burnout','flatline','ice','black','white','grey','gray','corporate','freelance','mercenary','shadowrunner','netrunner','techie','fixer','nomad','rocker','media','solo','face','rigger','decker','wageslave','suit','exec','wage','zaibatsu','megacorp','conglomerate','cartel','syndicate','gang','crew','posse','runner','team','cell','unit','squad','legion','red','light','district','night','city','sprawl','arcology','habblock','coffin','hotel','capsule','squat','turf','zone','combat','hot','contested','neutral','extraterritorial','sovereign','free','market','underground','shadow','smuggle','fence','broker','middleman','info','talent','scout','headhunter','contract','job','run','milk','extraction','assassination','courier','theft','sabotage','infiltration','investigation','heist','smash','grab'],
+    ru: ['неон','хром','взлом','вольт','шифр','демон','призрак','кибер','панк','самурай','лезвие','кабель','нейро','сеть','имплант','модуль','разгон','флатлайн','наёмник','взломщик','рокер','синдикат','бригада','квартал','зона','теневой','контракт','задание','диверсия','инфильтрат']
+  },
+  horror: {
+    en: ['dread','void','hex','bane','ruin','pale','shade','grim','lurk','crypt','reap','wail','scar','haunt','tomb','maw','eldritch','cosmic','primal','atavistic','nameless','formless','shapeless','boundless','limitless','ancient','ageless','timeless','eternal','undying','deathless','immortal','unkillable','unstoppable','inexorable','relentless','merciless','pitiless','heartless','soulless','mindless','thoughtless','breathless','bloodless','lifeless','eyeless','faceless','voiceless','tongueless','boneless','spineless','gutless','faithless','hopeless','joyless','loveless','graceless','shameless','restless','dreamless','sleepless','endless','bottomless','fathomless','measureless','immeasurable','incomprehensible','unknowable','unspeakable','unthinkable','unimaginable','indescribable','ineffable','inexpressible','unseen','unheard','unfelt','untouched','untasted','unsmelled','unperceived','unnoticed','unsensed','imperceptible','invisible','inaudible','intangible','weightless','massless','dimensionless','flat','hollow','empty','barren','desolate','forsaken','abandoned','forgotten','lost','missing','absent','gone','vanished','disappeared','dissolved','dispersed','scattered','consumed','devoured','absorbed','assimilated','integrated','merged','unified','singular'],
+    ru: ['ужас','пустота','проклятие','бледность','тень','мрак','склеп','призрак','могила','пасть','древний','безымянный','вечный','бессмертный','безжалостный','бездушный','безликий','бесконечный','невидимый','непостижимый','заброшенный','забытый','потерянный','поглощённый','смертный','ночной','тёмный','жуткий','зловещий','роковой']
+  },
+  mythology: {
+    en: ['aegis','rune','titan','dusk','valor','orin','loki','thor','mars','apollo','ares','hades','zeus','odin','freyr','crom','athena','artemis','hermes','dionysus','poseidon','hephaestus','aphrodite','hera','demeter','persephone','hecate','nemesis','nike','tyche','eros','psyche','orpheus','eurydice','achilles','odysseus','ajax','hector','paris','agamemnon','menelaus','patroclus','penelope','circe','calypso','scylla','charybdis','medusa','perseus','andromeda','bellerophon','pegasus','chimera','sphinx','minotaur','theseus','ariadne','daedalus','icarus','prometheus','epimetheus','pandora','narcissus','echo','midas','tantalus','sisyphus','ixion','atlas','cronus','uranus','gaia','chaos','nyx','erebus','tartarus','elysium','asphodel','styx','lethe','phlegethon','acheron','cocytus','charon','cerberus','thanatos','hypnos','morpheus','oneiros','aether','hemera','helios','selene','eos','aurora','zephyr','boreas','notus','eurus','aeolus','iris','mercury','jupiter','juno','minerva','venus','vulcan','neptune','pluto','ceres','diana','bacchus','saturn','freya','baldur','tyr','heimdall','freyja','sif','frigg','idun','bragi','forseti','ullr','vidar','vali','hodr','hermor','skadi','njord','aegir','ran','mimir','nidhogg','ratatoskr','fenrir','jormungandr','sleipnir','gullinbursti','tanngrisnir','tanngnjost','huginn','muninn','geri','freki'],
+    ru: ['эгида','руна','титан','валор','один','тор','арес','аид','зевс','фрейр','афина','артемида','гермес','дионис','посейдон','гефест','афродита','гера','деметра','персефона','геката','немезида','ника','тихе','эрос','психея','орфей','эвридика','ахилл','одиссей','аякс','гектор','парис','агамемнон','менелай','пенелопа','цирцея','медуза','персей','беллерофонт','пегас','химера','сфинкс','минотавр','тесей','дедал','икар','прометей','пандора','нарцисс','мидас','тантал','сизиф','атлас','кронос','уран','гея','хаос','никта','эреб','тартар','элизиум','стикс','лета','харон','цербер','танатос','гипнос','морфей','гелиос','селена','эос','зефир','борей','эол','ирида','меркурий','юпитер','юнона','минерва','венера','вулкан','нептун','плутон','церера','диана','бахус','сатурн','фрейя','локи','бальдр','тюр','хеймдалль','идун','браги','скади','ньёрд','фенрир','ёрмунганд','слейпнир','хугинн','мунинн']
+  }
+};
+
+const adjectives = {
+  cool:        { en: ['dark','swift','iron','steel','neon','sharp','cold','slick','ghost','dead','wild','raw','hex','void','grim','ace','black','red','blue','chrome','frozen','silent','deadly','razor','electric','atomic','sonic','turbo','ultra','hyper','super','mega','alpha','omega','prime','apex','zero','max','pro','elite','supreme','ultimate','absolute','perfect','ideal','true','pure','clean','clear','bright','bold','brave','fierce','hard','tough','strong','fast','quick','agile','keen','smart','wise','calm','cool','chill','smooth','sleek','crisp','rough','gritty','edgy','deep','rich','heavy','dense','thick','solid','firm','tight','right','good','great','grand','vast','wide','long','high','tall','big','huge','massive','epic','legendary','mythic','iconic','classic','vintage','retro','modern','fresh','new','next'], ru: ['тёмный','острый','стальной','неоновый','ледяной','дикий','мрачный','смертный','электрический','турбо','ультра','гипер','мега','альфа','омега','прайм','верховный','абсолютный','идеальный','чистый','яркий','смелый','храбрый','жёсткий','крепкий','сильный','ловкий','умный','мудрый','плавный','точный','глубокий','тяжёлый','огромный','эпический','легендарный','мифический','культовый','современный','свежий','быстрый','невидимый','бесстрашный','беспощадный','неуязвимый','непобедимый'] },
+  mysterious:  { en: ['shadow','cipher','phantom','void','echo','silent','hidden','veiled','obscure','cryptic','lurk','mystic','arcane','sealed','unknown','nameless','faceless','unseen','cloaked','masked','shrouded','draped','wrapped','covered','concealed','secret','covert','stealth','stealthy','quiet','hushed','muted','dim','dark','murky','opaque','dense','thick','foggy','misty','hazy','blurry','fuzzy','vague','unclear','ambiguous','uncertain','doubtful','questionable','suspect','suspicious','dubious','shady','sketchy','elusive','evasive','slippery','shifty','sneaky','cunning','wily','crafty','sly','devious','scheming','plotting','manipulative','deceptive','misleading','confusing','puzzling','perplexing','baffling','bewildering','mystifying','enigmatic','inscrutable','unfathomable','impenetrable','incomprehensible'], ru: ['тёмный','скрытый','загадочный','мистический','тайный','молчаливый','безликий','невидимый','туманный','неясный','уклончивый','хитрый','коварный','обманчивый','непостижимый','призрачный','неуловимый','зловещий','бесшумный','незримый','потаённый','закрытый','ночной','теневой','скрытный','затаённый','мрачный','зыбкий','смутный'] },
+  cute:        { en: ['tiny','fluffy','mini','soft','cozy','sweet','pixel','chibi','bubbly','pastel','kitty','cloud','star','bunny','gummy','little','small','petite','dainty','delicate','gentle','tender','warm','fuzzy','cuddly','snuggly','comfy','homey','friendly','cheerful','happy','joyful','playful','lively','energetic','bouncy','springy','perky','peppy','spunky','frisky','feisty','spirited','animated','vivacious','bright','sunny','sparkly','twinkly','shiny','glittery','glowy','radiant','luminous','brilliant','dazzling','gleaming','shimmering','glimmering','twinkling','flickering','dancing','prancing','skipping','hopping','bouncing','leaping','jumping','spinning','twirling','swirling','curling','coiling','winding','spiraling','looping','weaving','braiding','knitting','crocheting','embroidering','stitching','sewing','quilting','patching','mending','fixing','healing','nurturing','caring','loving','adoring','cherishing','treasuring','valuing','prizing'], ru: ['пушистый','мягкий','уютный','сладкий','звёздный','облачный','кроличий','крошечный','нежный','ласковый','тёплый','обнимательный','домашний','дружелюбный','весёлый','счастливый','радостный','игривый','живой','энергичный','прыгучий','бодрый','задорный','лучистый','сияющий','искрящийся','блестящий','сверкающий','танцующий','порхающий','скачущий','вращающийся','кружащийся','витающий','розовый','голубой','золотистый','серебристый','бархатный','шелковый','кружевной','воздушный'] },
+  epic:        { en: ['ultra','mega','hyper','supreme','legendary','eternal','infinite','prime','apex','titan','god','omega','alpha','ultimate','absolute','transcendent','divine','celestial','cosmic','universal','galactic','stellar','solar','lunar','astral','ethereal','spectral','phantasmal','illusory','dreamlike','surreal','mythical','heroic','epic','grand','vast','immense','enormous','colossal','gigantic','titanic','monstrous','tremendous','stupendous','prodigious','extraordinary','exceptional','remarkable','notable','significant','important','crucial','critical','vital','essential','fundamental','foundational','primal','primordial','original','ancient','ageless','timeless','everlasting','undying','deathless','immortal','indestructible','invincible','invulnerable','unbreakable','unshakeable','unwavering','unyielding','unrelenting','unstoppable','irresistible','overwhelming','dominating','commanding','controlling','ruling','reigning','sovereign','paramount','preeminent','foremost','leading','top','first','best','greatest','highest','strongest','mightiest','most','powerful','influential','major','principal','chief','main'], ru: ['верховный','легендарный','вечный','бесконечный','титанический','абсолютный','запредельный','божественный','небесный','космический','галактический','звёздный','астральный','эфирный','мифический','героический','грандиозный','огромный','колоссальный','чудовищный','выдающийся','исключительный','важный','фундаментальный','первобытный','изначальный','древний','бессмертный','неразрушимый','непобедимый','несокрушимый','неостановимый','доминирующий','властвующий','суверенный','первейший','могущественный','всесильный','всевластный','непоколебимый'] },
+  funny:       { en: ['derpy','yolo','noob','cursed','sus','janky','wack','goofy','silly','bonk','honk','clown','chad','doge','bruh','salty','tilted','based','cringe','mid','goated','fire','lit','iconic','lowkey','highkey','blessed','random','chaotic','unhinged','feral','menace','goblin','gremlin','sussy','poggers','cracked','bussin','cooked','ratiod','vibing','slaying','bopping','slapping'], ru: ['нубовый','странный','дикий','клоунский','смешной','тупенький','кринжовый','базовый','огненный','читерский','случайный','хаотичный','мемный','вирусный','культовый','легендарный','неадекватный','безумный','фиговый','крутейший','мощнейший','нелепый','забавный','чудной','придурковатый','весёлый','рандомный','эпичный','ленивый','сонный'] }
+};
+
+// Английские суффиксы по стилям — короткие, читаемые, без длинных латинских.
+const suffixesEnByStyle = {
+  cool:       ['er','or','ix','ax','ex','on','yn','us','is','yx','ar','az','en','io','ic'],
+  mysterious: ['us','is','os','ex','ix','um','on','ar','yn','yx','ius','eon','oth'],
+  cute:       ['ie','y','sy','kins','bun','pop','poo','let','ette','elle'],
+  epic:       ['us','or','arius','ion','ax','an','ix','on','arion','ius'],
+  funny:      ['oodle','zilla','meister','kins','poo','doo','nator','borg','bot','xd','lol']
+};
+
+// Английские префиксы — полноценные слова, а не двухбуквенные обрывки.
+const prefixesEnByStyle = {
+  cool:       ['Neo','Hyper','Ultra','Mega','Cyber','Astro','Turbo','Atomic','Sonic','Razor','Iron','Steel','Chrome','Frost','Dark','Phantom','Onyx','Zero','Apex'],
+  mysterious: ['Dark','Shadow','Hidden','Veiled','Silent','Cryptic','Lost','Ancient','Forgotten','Eclipse','Hollow','Voiceless','Faceless','Nameless','Twilight','Midnight','Moon','Misty'],
+  cute:       ['Sweet','Tiny','Sunny','Cuddly','Fluffy','Bouncy','Lovely','Cozy','Cheery','Sparkly','Tender','Gentle','Mellow','Honey','Bubble','Pixie','Marshmallow','Star'],
+  epic:       ['Grand','Mighty','Iron','Storm','Thunder','Dragon','Eternal','Immortal','Legend','Astral','Royal','Imperial','Crimson','Blazing','Frozen','Golden','Silver','Titan','Doom','Mythic'],
+  funny:      ['Lazy','Goofy','Wacky','Doofy','Cranky','Bouncy','Soggy','Jelly','Crusty','Mossy','Sleepy','Sneezy','Grumpy','Floppy','Wobbly','Zesty','Funky']
+};
+
+// Сохранили для совместимости со старым кодом
+const suffixes = {
+  en: suffixesEnByStyle.cool,
+  ru: ['он','ан','ар','ор','ер','ир','ус','ис','ик','ок','ек','ак','ук','ыч','ич','ач','аш','яш','эш','ос','ас','эс','ин','ун','ян','ен']
+};
+const prefixes = {
+  en: prefixesEnByStyle.cool,
+  ru: ['Про','Пре','Нео','Ультра','Мега','Гипер','Крипто','Тёмный','Свет','Альфа','Омега','Икс','Зет','Арт','Вар','Рэд','Блэк','Сайбер','Дарк','Лайт']
+};
+
+// ══════════════════════════════════════════════════════════════════
+// РУССКИЕ НИК-ОСНОВЫ — 2000 коротких звучных слов для никнеймов
+// Принцип: короткие (2–7 букв), легко произносятся, реально звучат
+// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// РУ-ОСНОВЫ: тематические + стилевые группы
+// Каждая группа содержит ~50% «английских слов кириллицей» (транслит)
+// и ~50% исконно русских/славянских слов
+// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════
+// БАЗА НИК-ОСНОВ ПО ИНТЕРЕСАМ
+// Каждый интерес содержит два массива:
+//   ru  — чисто русские слова (60% вероятность)
+//   tr  — английские слова в русской транслитерации (40% вероятность)
+// ══════════════════════════════════════════════════════════════════════
+const ruBases = {
+
+  // ── УНИВЕРСАЛЬНЫЕ (стиль cool, без интересов) ──
+  cool: {
+    ru: ['Ворон','Волк','Рысь','Лис','Барс','Тигр','Орёл','Пума','Вихрь','Тень',
+         'Шторм','Гром','Молот','Мрак','Пламя','Клинок','Стрела','Скала','Зубр','Кречет',
+         'Сокол','Ястреб','Буря','Кряж','Кедр','Дуб','Сталь','Зенит','Закат','Хребет',
+         'Гранит','Кремень','Туман','Метель','Иней','Беркут','Филин','Сова','Холод','Заря',
+         'Пепел','Рассвет','Гарпун','Дрозд','Кобра','Барсук','Шакал','Гепард','Куница','Соболь',
+         'Хорёк','Орлан','Жнец','Странник','Огонь','Камень','Лёд','Витязь','Корсар','Пилот',
+         'Удар','Тайфун','Шквал','Прибой','Зной','Шёпот','Топор','Базальт','Обсидиан','Кварц',
+         'Меридиан','Маяк','Сапсан','Тур','Лось','Олень','Косатка','Акула','Скат','Угорь',
+         'Грозовой','Стрелок','Воитель','Норка','Питон','Анаконда','Ягуар','Леопард','Кугуар','Каракал'],
+    tr: ['Блейд','Найт','Флэш','Рэйдж','Краш','Апекс','Прайм','Нексус','Флинт','Дрейк',
+         'Скорп','Рифт','Форж','Дрифт','Стриж','Волт','Кейн','Зейн','Равен','Нова',
+         'Шторм','Эш','Рейв','Скор','Курс','Бласт','Гайст','Шторк','Веста','Орик']
+  },
+
+  // ── СПОРТ ──
+  sport: {
+    ru: ['Рывок','Удар','Бросок','Спринт','Финт','Блок','Защита','Темп','Прыжок','Бег','Гонка','Борьба','Захват','Подача','Чемпион','Победитель','Финалист','Рекорд','Медаль','Кубок','Лига','Турнир','Матч','Тренер','Капитан','Вратарь','Защитник','Бомбардир','Снайпер','Гонщик','Пловец','Боксёр','Борец','Акробат','Гимнаст','Атлет','Лыжник','Сёрфер','Скейтер','Роллер','Финиш','Старт','Эстафета','Барьер','Тактика','Стратегия','Воля','Сила','Скорость','Выносливость','Реакция','Тренировка','Победа','Кросс','Марафон','Сборная','Натиск','Запал','Хват','Прыгун','Метатель','Дискобол','Силач','Тяжеловес','Лёгкий','Молот','Копьё','Рапира','Шпага','Сабля','Стрелок','Альпинист','Скалолаз','Гребец','Жокей','Ныряльщик','Каякер','Райдер','Жеребец','Рекордсмен','Скороход','Бегун','Боец','Дзюдоист','Самбист','Каратист','Лидер','Игрок','Тренажёр'],
+    tr: ['Спринтер','Клатч','Раш','Буст','Страйк','Дабл','Комбо','Финиш','Старт','Аут',
+         'Офсайд','Пенальти','Корнер','Тайм','Сет','Гейм','Скор','Ранг','Тир','Хэттрик',
+         'Слэм','Дабк','Аим','Кайт','Флэнк','Вайп','Стрейф','Файтер','Раннер','Чемп']
+  },
+
+  // ── ГЕЙМИНГ ──
+  gaming: {
+    ru: ['Воин','Маг','Жрец','Паладин','Плут','Бард','Лучник','Воитель','Шаман','Друид',
+         'Берсерк','Колдун','Призыватель','Охотник','Страж','Заклинатель','Сапёр','Снайпер','Разведчик','Авангард',
+         'Клинок','Меч','Лук','Топор','Молот','Кинжал','Копьё','Жезл','Посох','Щит',
+         'Броня','Кольчуга','Латы','Шлем','Перчатка','Мантия','Плащ','Талисман','Амулет','Руна',
+         'Зелье','Эликсир','Свиток','Артефакт','Реликвия','Трофей','Кристалл','Самоцвет','Босс','Подземелье',
+         'Рейд','Клан','Гильдия','Альянс','Орден','Легион','Фракция','Сезон','Патч','Лобби',
+         'Арена','Поле','Карта','Респаун','Гладиатор','Чемпион','Рейнджер','Алхимик','Некромант','Чародей',
+         'Целитель','Танк','Поддержка','Капитан','Командир','Король','Принц','Герой','Подмастерье','Странник',
+         'Турнир','Битва','Поединок','Дуэль','Эпопея','Сага','Квест','Миссия','Награда','Победа'],
+    tr: ['Хэдшот','Клатч','Стрейф','Флэнк','Кайт','Нерф','Бафф','Дебафф','Кулдаун','Спаун',
+         'Пинг','Тир','Дивизион','Хантер','Стримлер','Буст','Скор','Баттл','Дамаг','Хил',
+         'Танкер','Керри','Джанглер','Топер','Лэйнер','Карри','Рейдер','Кранк','Мейн','Прокс']
+  },
+
+  // ── АНИМЕ ──
+  anime: {
+    ru: ['Самурай','Ниндзя','Шиноби','Сёгун','Демон','Воин','Охотник','Призрак','Легенда','Мастер',
+         'Тень','Свет','Огонь','Ветер','Вода','Земля','Молния','Луна','Солнце','Звезда',
+         'Цветок','Лепесток','Ветка','Лотос','Хризантема','Камелия','Меч','Стрела','Лук','Доспех',
+         'Маска','Зеркало','Дракон','Феникс','Журавль','Тигр','Волк','Лиса','Рысь','Сокол',
+         'Странник','Скиталец','Изгнанник','Отшельник','Монах','Послушник','Ученик','Наставник','Брат','Сестра',
+         'Княжна','Принцесса','Принц','Канцлер','Дайме','Господин','Госпожа','Поэт','Воитель','Боец',
+         'Меченосец','Лучник','Кузнец','Знахарь','Целитель','Танцор','Певец','Музыкант','Заклинатель','Стрелок'],
+    tr: ['Кагэ','Хикари','Ками','Юкимура','Ёкай','Тэнгу','Кицунэ','Тануки','Рюу','Сакура',
+         'Куро','Широ','Аои','Юки','Тора','Нэко','Шиноби','Шинигами','Банкай','Сэнсэй',
+         'Семпай','Кохай','Цуки','Хоси','Кэн','Рэй','Кай','Рэн','Сора','Мидори',
+         'Акай','Сейя','Орочи','Дайме','Бусидо','Катана','Танто','Юми','Сюрикен','Райдзин']
+  },
+
+  // ── МУЗЫКА ──
+  music: {
+    ru: ['Бас','Бит','Ритм','Волна','Аккорд','Мелодия','Вокал','Хор','Соло','Пауза','Финал','Студия','Концерт','Альбом','Голос','Звук','Струна','Темп','Лад','Тональность','Гармония','Куплет','Припев','Бридж','Дирижёр','Виртуоз','Маэстро','Композитор','Аранжировка','Партия','Симфония','Соната','Прелюдия','Этюд','Канон','Регент','Ноктюрн','Менестрель','Музыкант','Гитара','Скрипка','Виолончель','Контрабас','Флейта','Кларнет','Орган','Барабан','Литавры','Арфа','Лютня','Цимбала','Гусли','Свирель','Балалайка','Рояль','Пианино','Тромбон','Труба','Валторна','Саксофон','Дудка','Рожок','Бубен','Тамбурин','Челеста','Маримба','Лютнист','Скрипач','Гитарист','Барабанщик','Певец','Солист','Тенор','Альт','Сопрано','Меццо','Концертмейстер','Звукорежиссёр','Аранжировщик'],
+    tr: ['Риф','Дроп','Ремикс','Семпл','Синт','Петля','Вайб','Дабстеп','Трэп','Техно',
+         'Хаус','Транс','Лофай','Джаз','Фанк','Блюз','Метал','Панк','Инди','Рэп',
+         'Регги','Соул','Ска','Гранж','Альт','Нео','Граф','Сет','Тон','Кросс']
+  },
+
+  // ── ТЕХНОЛОГИИ ──
+  tech: {
+    ru: ['Ядро','Поток','Стек','Граф','Дерево','Шифр','Токен','Код','Сеть','Данные',
+         'Алгоритм','Функция','Класс','Объект','Модуль','Сервис','Кластер','Реплика','Буфер','Матрица',
+         'Узел','Ключ','Логика','Схема','Контур','Маршрут','Канал','Поле','Запрос','Ответ',
+         'Сервер','Клиент','Прокси','Скрипт','Драйвер','Шина','Регистр','Процессор','Чип','Плата',
+         'Память','Накопитель','Кодек','Сигнал','Импульс','Резонатор','Транзистор','Конденсатор','Резистор','Контроллер',
+         'Сенсор','Датчик','Робот','Дрон','Маяк','Радар','Локатор','Сканер','Антенна','Спутник',
+         'Программист','Инженер','Аналитик','Архитектор','Тестировщик','Разработчик','Алгоритмист','Криптограф','Системщик','Админ'],
+    tr: ['Байт','Нексус','Нейрон','Квант','Флюкс','Пульс','Хакер','Кодер','Шард','Нод',
+         'Хост','Патч','Форк','Коммит','Бранч','Мерж','Докер','Девопс','Логик','Пинг',
+         'Рендер','Кэш','Хип','Пойнтер','Индекс','Вектор','Демон','Линкер','Лоадер','Билдер']
+  },
+
+  // ── ПРИРОДА ──
+  nature: {
+    ru: ['Кедр','Дуб','Бук','Ольха','Рябина','Волк','Рысь','Лось','Зубр','Медведь',
+         'Орёл','Сокол','Ястреб','Кречет','Гроза','Вьюга','Буря','Вихрь','Шторм','Хребет',
+         'Скала','Утёс','Ключ','Родник','Ручей','Поток','Луч','Блик','Тень','Туман',
+         'Иней','Метель','Поляна','Лужайка','Опушка','Чаща','Дубрава','Боровик','Лютик','Ромашка',
+         'Колокольчик','Шиповник','Малина','Ежевика','Брусника','Клюква','Голубика','Подснежник','Ландыш','Иволга',
+         'Снегирь','Дятел','Свиристель','Зимородок','Тетерев','Глухарь','Куропатка','Цапля','Журавль','Лебедь',
+         'Утка','Гусь','Олень','Лань','Косуля','Кабан','Барсук','Енот','Бобр','Норка',
+         'Куница','Хорёк','Горностай','Ласка','Соболь','Заяц','Белка','Ёжик','Сосна','Берёза',
+         'Осина','Ива','Клён','Тополь','Каштан','Папоротник','Можжевельник','Барбарис','Калина','Рябчик'],
+    tr: ['Сторм','Фрост','Флейм','Рейвен','Вулф','Хокк','Эш','Крест','Пик','Ридж',
+         'Дрифт','Клиф','Форест','Ривер','Гейл','Дюна','Мист','Глейд','Грим','Свон']
+  },
+
+  // ── КИБЕРПАНК ──
+  cyberpunk: {
+    ru: ['Хакер','Шифр','Матрица','Нейросеть','Импульс','Сигнал','Реплика','Демон','Призрак','Сеть','Чип','Имплант','Модуль','Протокол','Терминал','Контракт','Заказ','Лезвие','Хром','Сталь','Лоск','Маяк','Контур','Кодекс','Декодер','Шум','Резонанс','Кварц','Луч','Призма','Курьер','Наёмник','Беглец','Тень','Маска','Двойник','Подмена','Сборщик','Взломщик','Программист','Корпорация','Картель','Синдикат','Бригада','Квартал','Зона','Сектор','Поле','Уровень','Цифра','Капсула','Холодильник','Контейнер','Бункер','Убежище','Прибежище','Конклав','Каркас','Магистраль'],
+    tr: ['Нейро','Байт','Нексус','Флюкс','Глитч','Синт','Джек','Вайр','Дата','Волт',
+         'Крипт','Ворп','Блэкаут','Сайбер','Панк','Хром','Пиксель','Вектор','Протокол','Резо',
+         'Декер','Скан','Шифт','Декс','Линк','Гейт','Кьюб','Бот','Ровер','Пин']
+  },
+
+  // ── УЖАСЫ ──
+  horror: {
+    ru: ['Тень','Мрак','Склеп','Хаос','Призрак','Сумрак','Пустошь','Бездна','Вой','Проклятие',
+         'Руина','Могила','Ужас','Кошмар','Тьма','Мертвец','Нежить','Вампир','Оборотень','Ведьма',
+         'Зловещий','Тлен','Дрёма','Полночь','Полнолуние','Ритуал','Жертва','Алтарь','Гроб','Кладбище',
+         'Стон','Хрип','Шорох','Эхо','Лютый','Морок','Молчание','Безмолвие','Тишина','Гул',
+         'Шёпот','Шипение','Тревога','Жуть','Холодец','Дрожь','Озноб','Туман','Дымка','Мгла',
+         'Сирин','Бес','Чёрт','Демон','Чудовище','Тварь','Гадина','Жнец','Каратель','Палач'],
+    tr: ['Морт','Скорн','Нуар','Гримм','Фантом','Виспер','Тартар','Некро','Аид','Ноктюрн',
+         'Шейд','Крипт','Абисс','Мортис','Реквием','Эреб','Сабат','Лилит','Лазарь','Каин',
+         'Готик','Танат','Тенебра','Морок','Невермор','Грим','Соул','Дюна','Тэйн','Орк']
+  },
+
+  // ── МИФОЛОГИЯ ──
+  mythology: {
+    ru: ['Перун','Велес','Сварог','Ярило','Леший','Кощей','Руна','Титан','Валькирия','Берсерк',
+         'Богатырь','Витязь','Паладин','Воевода','Страж','Дракон','Гидра','Пегас','Сирена','Горгона',
+         'Феникс','Грифон','Минотавр','Кентавр','Сатир','Нимфа','Дриада','Русалка','Алконост','Сирин',
+         'Гамаюн','Морок','Лихо','Берегиня','Род','Стрибог','Семаргл','Мокошь','Чернобог','Белобог',
+         'Хорс','Святогор','Илья','Алёша','Добрыня','Микула','Финист','Жар-птица','Полкан','Соловей',
+         'Бус','Велимудр','Радогор','Святовит','Симаргл','Дажьбог','Лель','Лада','Жива','Девана'],
+    tr: ['Зевс','Арес','Аид','Один','Тор','Локи','Фенрир','Аврора','Геката','Дионис','Гефест','Ахилл','Одиссей','Гектор','Медуза','Минотавр','Прометей','Атлас','Харон','Морфей','Рагнар','Хеймдаль','Тюр','Мимир','Гунгнир','Мьёльнир','Слейпнир','Нидхогг','Хугинн','Мунинн','Аполлон','Артемис','Афина','Гермес','Нюкс','Эреб','Цербер','Танатос','Гипнос']
+  },
+
+  // ── КОСМОС ──
+  space: {
+    ru: ['Пульсар','Квазар','Туманность','Созвездие','Астероид','Метеор','Комета','Горизонт','Зенит','Апогей',
+         'Фотон','Нейтрино','Кварк','Энтропия','Аврора','Сигнал','Орбита','Гравитация','Вспышка','Радиация',
+         'Магнетар','Сверхновая','Сатурн','Юпитер','Марс','Венера','Меркурий','Нептун','Уран','Плутон',
+         'Луна','Солнце','Сириус','Альтаир','Вега','Денеб','Антарес','Спика','Капелла','Поллукс',
+         'Альдебаран','Орион','Кассиопея','Андромеда','Геркулес','Лебедь','Лира','Дева','Стрелец','Овен',
+         'Телец','Близнецы','Рак','Лев','Скорпион','Козерог','Рыбы','Эклиптика','Кеплер','Хаббл'],
+    tr: ['Нова','Нейтрон','Антиматер','Сингуляр','Квантум','Варп','Плазма','Пульс','Ион','Гамма',
+         'Кластер','Галактик','Астрал','Фотик','Солар','Лунар','Зета','Орбис','Стар','Космос']
+  },
+
+  // ── ФЭНТЕЗИ ──
+  fantasy: {
+    ru: ['Руна','Тень','Маг','Ведьма','Жрец','Паладин','Плут','Бард','Рыцарь','Лорд',
+         'Страж','Хранитель','Дракон','Гидра','Химера','Пегас','Проклятие','Благо','Оракул','Артефакт',
+         'Реликвия','Талисман','Амулет','Свиток','Гримуар','Кодекс','Алтарь','Цитадель','Башня','Замок',
+         'Меч','Топор','Молот','Лук','Стрела','Кинжал','Жезл','Посох','Корона','Скипетр',
+         'Эльф','Гном','Орк','Гоблин','Тролль','Огр','Гарпия','Виверна','Дриада','Сирена',
+         'Друид','Колдун','Заклинатель','Воитель','Зверолов','Следопыт','Лекарь','Жнец','Странник','Берсерк',
+         'Магистр','Архимаг','Чародей','Колдунья','Волшебник','Мудрец','Прорицатель','Алхимик','Зельевар','Книгочей',
+         'Король','Принц','Принцесса','Королева','Герцог','Барон','Граф','Регент','Канцлер','Воевода',
+         'Доспех','Латник','Кольчуга','Шлем','Щитоносец','Меченосец','Копейщик','Лучник','Арбалетчик','Знаменосец'],
+    tr: ['Варп','Крипт','Гримм','Шейд','Некро','Дрейк','Мортис','Тартар','Фантом','Виспер',
+         'Абисс','Скорн','Аквила','Лич','Кобольд','Сильф','Ундина','Саламандра','Феи','Бахамут',
+         'Тиамат','Кракен','Голем','Гомункул','Шогот','Морок','Эльдар','Аномис','Орк','Тэйн']
+  },
+
+  // ── КИНО ──
+  cinema: {
+    ru: ['Кадр','Сцена','Нуар','Линза','Сага','Икона','Режиссёр','Монолог','Тень','Силуэт','Вспышка','Контраст','Монтаж','Ракурс','Финал','Дубль','Съёмка','Актёр','Образ','Звезда','Фильм','Лента','Премьера','Фестиваль','Постер','Кассета','Прокат','Сценарист','Оператор','Декорация','Реквизит','Эпилог','Хроника','Драма','Комедия','Трагедия','Притча','Антагонист','Протагонист','Сюжет','Завязка','Кульминация','Развязка','Прелюдия','Эпиграф','Цитата','Афоризм','Лейтмотив','Аплодисмент','Овация','Камео','Гримёр','Костюмер','Каскадёр','Дублёр','Монтажёр','Звукорежиссёр','Композитор'],
+    tr: ['Нуар','Культ','Фейд','Флэш','Кат','Арт','Блюр','Фрейм','Ван','Икон',
+         'Трейлер','Постер','Кастинг','Скрипт','Питч','Локейшн','Грейдинг','Ригг','Бум','Долли',
+         'Шоу','Сюрприз','Эпик','Прайм','Трип','Лайт','Бэк','Бокс','Гран','Софт']
+  },
+
+  // ── КНИГИ ──
+  books: {
+    ru: ['Мудрец','Свиток','Стих','Миф','Эпоха','Глава','Рукопись','Пролог','Рассказчик','Метафора',
+         'Аллегория','Сатира','Пародия','Мотив','Архетип','Жанр','Утопия','Детектив','Триллер','Готика',
+         'Сказание','Былина','Сага','Эпос','Поэма','Баллада','Идиллия','Элегия','Ода','Сонет',
+         'Том','Издание','Издатель','Тираж','Редактор','Корректор','Иллюстратор','Переплёт','Обложка','Закладка',
+         'Эпиграф','Глоссарий','Цитата','Заглавие','Эпизод','Сюжет','Развязка','Завязка','Кульминация','Зачин',
+         'Парабола','Притча','Аналогия','Гипербола','Эпитет','Метонимия','Синекдоха','Антитеза','Оксюморон','Каламбур',
+         'Поэт','Прозаик','Писатель','Драматург','Романист','Лирик','Бытописец','Сатирик','Юморист','Эссеист',
+         'Лектор','Чтец','Декламатор','Критик','Биограф','Историк','Летописец','Сказитель','Бард','Менестрель'],
+    tr: ['Лор','Кодекс','Гримуар','Сага','Арк','Гриф','Бард','Скриб','Квилл','Фейбл',
+         'Оракул','Хроника','Эпик','Легенда','Притча','Виньетка','Эссе','Скетч','Поэт','Литер']
+  },
+
+  // ── КУЛИНАРИЯ ──
+  cooking: {
+    ru: ['Специя','Дым','Соль','Жар','Бульон','Соус','Крем','Тесто','Гарнир','Жаркое',
+         'Гриль','Коптилка','Мангал','Казан','Вок','Сковорода','Духовка','Пар','Маринад','Сахар',
+         'Перец','Имбирь','Корица','Кардамон','Куркума','Шафран','Чабрец','Розмарин','Базилик','Лавр',
+         'Гвоздика','Мята','Тмин','Анис','Кориандр','Кунжут','Мак','Орех','Цедра','Шеф',
+         'Кулинар','Гурман','Дегустатор','Сомелье','Кондитер','Пекарь','Мясник','Рыбник','Зеленщик','Мельник',
+         'Тушение','Запекание','Варка','Жарка','Глазурь','Карамель','Сироп','Желе','Мармелад','Шоколад',
+         'Мёд','Сливки','Сметана','Творог','Сыр','Брынза','Уксус','Горчица','Майонез','Кетчуп',
+         'Пирог','Каравай','Кулич','Кекс','Печенье','Пряник','Зефир','Пастила','Халва','Леденец'],
+    tr: ['Умами','Глейз','Мисо','Зест','Флэмбе','Фьюжн','Смоки','Кранчи','Спайси','Сауси',
+         'Фреш','Крамбл','Тарт','Парфе','Мусс','Карри','Рамен','Удон','Соба','Темпура',
+         'Якитори','Дим-сам','Бургер','Пицца','Паста','Ризотто','Тако','Буррито','Кесадилья','Гуакамоле']
+  },
+
+  // ── ПУТЕШЕСТВИЯ ──
+  travel: {
+    ru: ['Маршрут','Перевал','Хребет','Вершина','Бухта','Маяк','Пристань','Ущелье','Долина','Горизонт',
+         'Рассвет','Закат','Туман','Пустыня','Оазис','Тундра','Тайга','Джунгли','Степь','Прерия',
+         'Гавань','Залив','Фьорд','Лагуна','Атолл','Риф','Архипелаг','Полуостров','Мыс','Каньон',
+         'Гора','Холм','Равнина','Плато','Саванна','Тропа','Дорога','Тракт','Путь','Шоссе',
+         'Путник','Бродяга','Странник','Скиталец','Кочевник','Скаут','Разведчик','Геодезист','Картограф','Лоцман',
+         'Капитан','Штурман','Боцман','Юнга','Матрос','Гребец','Парус','Якорь','Канат','Компас',
+         'Карта','Атлас','Глобус','Меридиан','Параллель','Экватор','Полюс','Тропик','Долгота','Широта',
+         'Альпинист','Турист','Походник','Велосипедист','Каякер','Сёрфер','Скалолаз','Пилот','Авиатор','Путешественник'],
+    tr: ['Номад','Ровер','Трекер','Пилот','Навигатор','Дрифтер','Роумер','Гайд','Рейнджер','Патруль',
+         'Скаут','Пионер','Эксплорер','Трэвел','Вояжер','Адвенчур','Одиссей','Сафари','Трек','Пик']
+  },
+
+  // ── АРТ ──
+  art: {
+    ru: ['Эскиз','Кисть','Холст','Оттенок','Тень','Палитра','Пигмент','Контраст','Текстура','Слой','Абстракт','Минимализм','Концепт','Инсталляция','Вектор','Глубина','Ракурс','Форма','Цвет','Свет','Линия','Штрих','Пятно','Композиция','Сюжет','Перспектива','Натюрморт','Пейзаж','Портрет','Этюд','Гуашь','Акрил','Уголь','Сангина','Карандаш','Тушь','Гравюра','Литография','Эстамп','Гончар','Скульптор','Живописец','Художник','Резчик','Витражист','Мозаик','Графитти','Граффер','Стенд','Мольберт','Бумага','Картон','Камень','Глина','Бронза','Мрамор','Дерево','Металл','Кружево','Резьба','Чеканка','Литьё','Рельеф','Барельеф','Бюст','Статуя','Памятник','Фреска'],
+    tr: ['Пикс','Блюр','Глитч','Неон','Хром','Нуар','Графит','Акрил','Гуашь','Скетч',
+         'Рендер','Манга','Стрит','Поп','Граффити','Паттерн','Сетка','Икон','Фрейм','Тон']
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════
+// ФОНОТАКТИКА: все суффиксы НАЧИНАЮТСЯ С ГЛАСНОЙ,
+// все префиксы ЗАКАНЧИВАЮТСЯ ГЛАСНОЙ ИЛИ «-ый/-ой/-ий/-й»,
+// чтобы стык всегда читался без скоплений согласных.
+// ════════════════════════════════════════════════════════════════════
+const ruSuffixes = {
+  cool:       ['ан','он','ор','ер','ин','ус','ис','ак','ок','ит','им','эль','ион','арт','эс','аро'],
+  mysterious: ['ос','ум','эль','иус','эон','ион','ис','ор','оним','эрос','уум','эст','ир'],
+  cute:       ['ик','ок','уша','аня','еня','ушка','очка','ёныш','ёнок','ыш','ушик','очек','оня'],
+  epic:       ['он','ор','ион','арий','архий','ас','им','ум','ат','аро','эон','остас','анус'],
+  funny:      ['ыч','аша','ёша','ан','уш','ыш','аня','ока','оня','еня','уха','юх','ыга'],
+  universal:  ['ан','он','ор','ер','ин','ус','ак','ок','ит','им']
+};
+
+const ruPrefixes = {
+  cool:       ['Нео','Ультра','Дарко','Мета','Прото','Контра','Зета','Альфа','Омега','Прайм','Тёмный','Стальной','Ночной','Железный','Огненный'],
+  mysterious: ['Тёмный','Ночной','Сумеречный','Безмолвный','Тайный','Призрачный','Забытый','Полночный','Туманный','Молчаливый','Безликий','Сонный','Лунный','Теневой','Скрытый'],
+  cute:       ['Сладкий','Сонный','Звёздный','Лунный','Облачный','Ласковый','Мягкий','Розовый','Радужный','Карамельный','Зефирный','Маленький','Пухлый','Нежный','Солнечный'],
+  epic:       ['Великий','Грозный','Огненный','Громовой','Стальной','Железный','Грозовой','Молниеносный','Бессмертный','Непобедимый','Кровавый','Алый','Золотой','Багряный'],
+  funny:      ['Кривой','Косой','Пузатый','Рыжий','Лысый','Лохматый','Сонный','Ленивый','Толстый','Бородатый','Усатый','Странный','Чудной','Сварливый','Колченогий'],
+  universal:  ['Нео','Дарко','Прайм','Альфа','Ультра','Мета']
+};
+
+// Маппинг интерес → ключ в ruBases
+const interestToBase = {
+  gaming:'gaming', anime:'anime', music:'music', art:'art',
+  tech:'tech', nature:'nature', cyberpunk:'cyberpunk', horror:'horror',
+  mythology:'mythology', space:'space', fantasy:'fantasy', sport:'sport',
+  cinema:'cinema', books:'books', cooking:'cooking', travel:'travel'
+};
+
+// ════════════════════════════════════════════════════════════════════
+// ФОНОТАКТИКА: проверка читаемости и умное склеивание частей
+// ════════════════════════════════════════════════════════════════════
+const RU_VOWELS = new Set('аеёиоуыэюя');
+function ruIsVowel(c) { return RU_VOWELS.has(c.toLowerCase()); }
+function ruIsLetter(c) { return /[а-яё]/i.test(c); }
+
+function trailingConsRu(word) {
+  let n = 0;
+  for (let i = word.length - 1; i >= 0; i--) {
+    const c = word[i].toLowerCase();
+    if (!ruIsLetter(c)) break;
+    if (ruIsVowel(c)) break;
+    if (c === 'ь' || c === 'ъ') break;
+    n++;
+  }
+  return n;
+}
+
+function leadingConsRu(word) {
+  let n = 0;
+  for (let i = 0; i < word.length; i++) {
+    const c = word[i].toLowerCase();
+    if (!ruIsLetter(c)) break;
+    if (ruIsVowel(c)) break;
+    if (c === 'ь' || c === 'ъ') break;
+    n++;
+  }
+  return n;
+}
+
+// Проверяет читаемость русского слова: ограничения по кластерам,
+// запреты явно неблагозвучных сочетаний.
+function isReadableRu(word) {
+  if (!word || word.length < 2 || word.length > 22) return false;
+  const w = word.toLowerCase();
+  let cRun = 0, vRun = 0, hasVowel = false, prev = '';
+  for (const ch of w) {
+    if (ruIsVowel(ch)) {
+      hasVowel = true; vRun++; cRun = 0;
+      // До 3 гласных подряд (Иоанн, Аои, союзный) — норм.
+      if (vRun > 3) return false;
+    } else if (ch === 'й' && ruIsVowel(prev)) {
+      // 'й' после гласной — глайд, закрывающий слог. Не считаем как часть кластера.
+      cRun = 0; vRun = 0;
+    } else if (ch === 'ь' || ch === 'ъ') {
+      // Мягкий/твёрдый знак — это модификатор предыдущей согласной,
+      // не отдельная согласная. В кластер не добавляем.
+      vRun = 0;
+    } else if (ruIsLetter(ch)) {
+      cRun++; vRun = 0;
+      // До 4 согласных подряд (рекордсмен, абстракт, эксплорер, конструктор).
+      if (cRun > 4) return false;
+    } else { cRun = 0; vRun = 0; }
+    prev = ch;
+  }
+  if (!hasVowel) return false;
+  // 'х' между шумных согласных — почти всегда нечитаемо
+  if (/[бвгдзжкптфцчшщ]х[бвгдзжкптфцчшщ]/.test(w)) return false;
+  // двойные шипящие на стыке
+  if (/жш|шж|щш|щж|чш|чщ|шщ/.test(w)) return false;
+  // твёрдый знак между согласной и согласной без гласной — некрасиво
+  if (/[бвгдзжкпстфцчшщ]ъ[бвгдзжкпстфцчшщ]/.test(w)) return false;
+  // повтор одной и той же согласной более 2 раз подряд
+  if (/([бвгджзйклмнпрстфхцчшщ])\1\1/.test(w)) return false;
+  return true;
+}
+
+// Аккуратно склеивает левую и правую части, гарантируя читаемость.
+// Возвращает null, если стык получается неблагозвучным.
+function smartJoinRu(left, right, opts) {
+  if (!left || !right) return null;
+  const maxLen = (opts && opts.maxLen) ? opts.maxLen : 16;
+  let L = String(left);
+  let R = String(right);
+  // Бракуем заранее, если итог точно слишком длинный
+  if (L.length + R.length > maxLen + 1) return null;
+  // На стыке мягкий/твёрдый знак перед согласной — убираем
+  if ((L.endsWith('ь') || L.endsWith('ъ')) && !ruIsVowel(R[0])) {
+    L = L.slice(0, -1);
+  }
+  const tCons = trailingConsRu(L);
+  const lCons = leadingConsRu(R);
+  const camel = !!(opts && opts.camelJoin);
+  // В CamelCase стык визуально разрывается заглавной буквой —
+  // 'й' ведёт себя как полугласная, поэтому допускаем кластер до 4.
+  const clusterLimit = camel ? 4 : 3;
+  if (tCons + lCons > clusterLimit) return null;
+  const lastL = L[L.length - 1].toLowerCase();
+  const firstR = R[0].toLowerCase();
+  // Запрещаем удвоение шумной согласной на стыке (сонорные л/м/н/с допустимы)
+  if (lastL === firstR && !ruIsVowel(lastL)) {
+    if (!'лнмс'.includes(lastL)) return null;
+  }
+  // В обычной склейке (без CamelCase) й+и/й+й сливаются в кашу.
+  // В CamelCase заглавная буква зрительно разделяет слова — оставляем.
+  if (!camel && lastL === 'й' && (firstR === 'й' || firstR === 'и')) return null;
+  // Две гласные подряд на стыке — обычно коряво,
+  // но при CamelCase-склейке (визуально два слова) допустимо.
+  if (ruIsVowel(lastL) && ruIsVowel(firstR)) {
+    const allowed = camel || (lastL === 'и' && firstR === 'я') || (lastL === 'и' && firstR === 'е');
+    if (!allowed) return null;
+  }
+  // Запрещаем повтор того же сегмента (например, 'мор'+'мор')
+  if (R.length >= 2 && L.toLowerCase().endsWith(R.slice(0,2).toLowerCase())) return null;
+  // CamelCase: для соединения двух полноценных слов (префикс+основа, основа+основа)
+  // первую букву правой части делаем заглавной — так ник читается как два слова.
+  if (opts && opts.camelJoin && R.length > 0) {
+    R = R[0].toUpperCase() + R.slice(1);
+  }
+  const result = L + R;
+  if (result.length > maxLen) return null;
+  if (!isReadableRu(result)) return null;
+  return result;
+}
+
+// ───── Род существительных и склонение прилагательных ─────
+// Слова на -ь могут быть как мужского, так и женского рода. Здесь —
+// явный список женских (для остальных на -ь предполагаем мужской).
+const RU_FEM_SOFT = new Set([
+  'виолончель','выносливость','гавань','глазурь','гуашь','дрожь','дуэль',
+  'жуть','карамель','кисть','лань','магистраль','медаль','метель','мокошь',
+  'нежить','нейросеть','память','параллель','полночь','пристань','пустошь',
+  'рукопись','рысь','свирель','свиристель','сеть','скорость','соль','сталь',
+  'степь','тварь','тень','тональность','туманность','тушь','цитадель'
+]);
+// Несклоняемые/иностранные слова на -о/-е, по факту мужского рода.
+const RU_MASC_OE = new Set([
+  'маэстро','дайме','куро','широ','лазарь','сомелье','ярило','нэко',
+  'нео','некро','нейро','резо','техно','меццо','альт','сопрано','тенор',
+  'танто','бусидо','лель','мисо','камео'
+]);
+// Имена существительные plurale tantum либо обычные множественные —
+// требуют формы прилагательного во множественном числе.
+const RU_PLURAL = new Set([
+  'данные','близнецы','латы','литавры','рыбы'
+]);
+// «Мужские -а/-я»: одушевлённые существительные мужского рода,
+// формально оканчивающиеся на -а/-я (Воевода, Юнга, Дядя, Юноша…).
+const RU_MASC_A = new Set([
+  'воевода','юнга'
+]);
+// Определяет грамматический род русского существительного по окончанию
+// + явный список исключений на -ь и несклоняемых на -о/-е.
+function detectRuGender(word) {
+  if (!word) return 'm';
+  const w = word.toLowerCase();
+  if (RU_PLURAL.has(w)) return 'p';
+  if (w.endsWith('мя')) return 'n';
+  if (RU_MASC_OE.has(w)) return 'm';
+  if (RU_MASC_A.has(w)) return 'm';
+  const last = w[w.length - 1];
+  if (last === 'а' || last === 'я') return 'f';
+  if (last === 'о' || last === 'е' || last === 'ё') return 'n';
+  if (last === 'ь') return RU_FEM_SOFT.has(w) ? 'f' : 'm';
+  return 'm';
+}
+// Парные формы прилагательных из ruPrefixes: ключ — мужская форма.
+// Несклоняемые приставки (Нео, Альфа, Мета, Прайм…) не входят — возвращаем как есть.
+const RU_ADJ_FORMS = {
+  // cool
+  'Тёмный':       { m:'Тёмный',       f:'Тёмная',       n:'Тёмное' },
+  'Стальной':     { m:'Стальной',     f:'Стальная',     n:'Стальное' },
+  'Ночной':       { m:'Ночной',       f:'Ночная',       n:'Ночное' },
+  'Железный':     { m:'Железный',     f:'Железная',     n:'Железное' },
+  'Огненный':     { m:'Огненный',     f:'Огненная',     n:'Огненное' },
+  // mysterious
+  'Сумеречный':   { m:'Сумеречный',   f:'Сумеречная',   n:'Сумеречное' },
+  'Безмолвный':   { m:'Безмолвный',   f:'Безмолвная',   n:'Безмолвное' },
+  'Тайный':       { m:'Тайный',       f:'Тайная',       n:'Тайное' },
+  'Призрачный':   { m:'Призрачный',   f:'Призрачная',   n:'Призрачное' },
+  'Забытый':      { m:'Забытый',      f:'Забытая',      n:'Забытое' },
+  'Полночный':    { m:'Полночный',    f:'Полночная',    n:'Полночное' },
+  'Туманный':     { m:'Туманный',     f:'Туманная',     n:'Туманное' },
+  'Молчаливый':   { m:'Молчаливый',   f:'Молчаливая',   n:'Молчаливое' },
+  'Безликий':     { m:'Безликий',     f:'Безликая',     n:'Безликое' },
+  'Сонный':       { m:'Сонный',       f:'Сонная',       n:'Сонное' },
+  'Лунный':       { m:'Лунный',       f:'Лунная',       n:'Лунное' },
+  'Теневой':      { m:'Теневой',      f:'Теневая',      n:'Теневое' },
+  'Скрытый':      { m:'Скрытый',      f:'Скрытая',      n:'Скрытое' },
+  // cute
+  'Сладкий':      { m:'Сладкий',      f:'Сладкая',      n:'Сладкое' },
+  'Звёздный':     { m:'Звёздный',     f:'Звёздная',     n:'Звёздное' },
+  'Облачный':     { m:'Облачный',     f:'Облачная',     n:'Облачное' },
+  'Ласковый':     { m:'Ласковый',     f:'Ласковая',     n:'Ласковое' },
+  'Мягкий':       { m:'Мягкий',       f:'Мягкая',       n:'Мягкое' },
+  'Розовый':      { m:'Розовый',      f:'Розовая',      n:'Розовое' },
+  'Радужный':     { m:'Радужный',     f:'Радужная',     n:'Радужное' },
+  'Карамельный':  { m:'Карамельный',  f:'Карамельная',  n:'Карамельное' },
+  'Зефирный':     { m:'Зефирный',     f:'Зефирная',     n:'Зефирное' },
+  'Маленький':    { m:'Маленький',    f:'Маленькая',    n:'Маленькое' },
+  'Пухлый':       { m:'Пухлый',       f:'Пухлая',       n:'Пухлое' },
+  'Нежный':       { m:'Нежный',       f:'Нежная',       n:'Нежное' },
+  'Солнечный':    { m:'Солнечный',    f:'Солнечная',    n:'Солнечное' },
+  // epic
+  'Великий':      { m:'Великий',      f:'Великая',      n:'Великое' },
+  'Грозный':      { m:'Грозный',      f:'Грозная',      n:'Грозное' },
+  'Громовой':     { m:'Громовой',     f:'Громовая',     n:'Громовое' },
+  'Грозовой':     { m:'Грозовой',     f:'Грозовая',     n:'Грозовое' },
+  'Молниеносный': { m:'Молниеносный', f:'Молниеносная', n:'Молниеносное' },
+  'Бессмертный':  { m:'Бессмертный',  f:'Бессмертная',  n:'Бессмертное' },
+  'Непобедимый':  { m:'Непобедимый',  f:'Непобедимая',  n:'Непобедимое' },
+  'Кровавый':     { m:'Кровавый',     f:'Кровавая',     n:'Кровавое' },
+  'Алый':         { m:'Алый',         f:'Алая',         n:'Алое' },
+  'Золотой':      { m:'Золотой',      f:'Золотая',      n:'Золотое' },
+  'Багряный':     { m:'Багряный',     f:'Багряная',     n:'Багряное' },
+  // funny
+  'Кривой':       { m:'Кривой',       f:'Кривая',       n:'Кривое' },
+  'Косой':        { m:'Косой',        f:'Косая',        n:'Косое' },
+  'Пузатый':      { m:'Пузатый',      f:'Пузатая',      n:'Пузатое' },
+  'Рыжий':        { m:'Рыжий',        f:'Рыжая',        n:'Рыжее' },
+  'Лысый':        { m:'Лысый',        f:'Лысая',        n:'Лысое' },
+  'Лохматый':     { m:'Лохматый',     f:'Лохматая',     n:'Лохматое' },
+  'Ленивый':      { m:'Ленивый',      f:'Ленивая',      n:'Ленивое' },
+  'Толстый':      { m:'Толстый',      f:'Толстая',      n:'Толстое' },
+  'Бородатый':    { m:'Бородатый',    f:'Бородатая',    n:'Бородатое' },
+  'Усатый':       { m:'Усатый',       f:'Усатая',       n:'Усатое' },
+  'Странный':     { m:'Странный',     f:'Странная',     n:'Странное' },
+  'Чудной':       { m:'Чудной',       f:'Чудная',       n:'Чудное' },
+  'Сварливый':    { m:'Сварливый',    f:'Сварливая',    n:'Сварливое' },
+  'Колченогий':   { m:'Колченогий',   f:'Колченогая',   n:'Колченогое' }
+};
+// Возвращает прилагательное в нужном роде. Если приставка несклоняемая
+// (Нео/Альфа/Мета/Прайм/…) — возвращает её без изменений.
+function declineRuAdj(adj, gender) {
+  const forms = RU_ADJ_FORMS[adj];
+  if (!forms) return adj;
+  if (gender === 'p') {
+    // Множественное число — выводим из мужской формы:
+    // -ий → -ие (Великий→Великие), -ый/-ой → -ые (Тёмный→Тёмные, Ночной→Ночные)
+    const m = forms.m;
+    if (m.endsWith('ий')) return m.slice(0, -2) + 'ие';
+    if (m.endsWith('ый') || m.endsWith('ой')) return m.slice(0, -2) + 'ые';
+    return m;
+  }
+  return forms[gender] || adj;
+}
+// Склейка «прилагательное (приставка) + основа» с согласованием по роду.
+function joinAdjBaseRu(prefix, base, opts) {
+  const declined = declineRuAdj(prefix, detectRuGender(base));
+  return smartJoinRu(declined, String(base).toLowerCase(), opts);
+}
+
+// Превращает слово в милую/диминутивную форму с учётом окончания.
+function makeCuteRu(base) {
+  const last = base.slice(-1).toLowerCase();
+  if (ruIsVowel(last)) {
+    return smartJoinRu(base, rand(['ник','чка','шка','нька','лик','шик']));
+  }
+  if ('гкх'.includes(last)) {
+    return smartJoinRu(base, rand(['ёнок','уша','аня','оня','уш']));
+  }
+  if (last === 'ь' || last === 'ъ') {
+    return smartJoinRu(base, rand(['чик','ик','оня','уша']));
+  }
+  return smartJoinRu(base, rand(['ик','чик','ок','уша','ёныш','аня','оня','еня']));
+}
+
+function getStyleKey(style) {
+  return ['cool','mysterious','cute','epic','funny'].includes(style) ? style : 'cool';
+}
+
+// Паттерны генерации: для каждого стиля свои весовые распределения.
+// Сильный приоритет «одно цельное слово» — это самая надёжная форма.
+const ruPatterns = {
+  cool: [
+    { w: 50, fn: (b) => b },
+    { w: 25, fn: (b) => smartJoinRu(b, rand(ruSuffixes.cool)) },
+    { w: 20, fn: (b) => joinAdjBaseRu(rand(ruPrefixes.cool), b, { camelJoin: true, maxLen: 17 }) },
+    { w: 5,  fn: (b, bd) => { const o = (bd.ru || []).filter(x => x !== b && x.length <= 7); if (!o.length) return null; return smartJoinRu(b, rand(o).toLowerCase(), { camelJoin: true, maxLen: 15 }); } }
+  ],
+  mysterious: [
+    { w: 55, fn: (b) => b },
+    { w: 25, fn: (b) => joinAdjBaseRu(rand(ruPrefixes.mysterious), b, { camelJoin: true, maxLen: 18 }) },
+    { w: 17, fn: (b) => smartJoinRu(b, rand(ruSuffixes.mysterious)) },
+    { w: 3,  fn: (b, bd) => { const o = (bd.ru || []).filter(x => x !== b && x.length <= 7); if (!o.length) return null; return smartJoinRu(b, rand(o).toLowerCase(), { camelJoin: true, maxLen: 15 }); } }
+  ],
+  cute: [
+    { w: 50, fn: (b) => makeCuteRu(b) },
+    { w: 25, fn: (b) => joinAdjBaseRu(rand(ruPrefixes.cute), b, { camelJoin: true, maxLen: 17 }) },
+    { w: 15, fn: (b) => smartJoinRu(b, rand(ruSuffixes.cute)) },
+    { w: 10, fn: (b) => b }
+  ],
+  epic: [
+    { w: 40, fn: (b) => b },
+    { w: 30, fn: (b) => joinAdjBaseRu(rand(ruPrefixes.epic), b, { camelJoin: true, maxLen: 19 }) },
+    { w: 25, fn: (b) => smartJoinRu(b, rand(ruSuffixes.epic)) },
+    { w: 5,  fn: (b, bd) => { const o = (bd.ru || []).filter(x => x !== b && x.length <= 7); if (!o.length) return null; return smartJoinRu(b, rand(o).toLowerCase(), { camelJoin: true, maxLen: 16 }); } }
+  ],
+  funny: [
+    { w: 50, fn: (b) => smartJoinRu(b, rand(ruSuffixes.funny)) },
+    { w: 25, fn: (b) => joinAdjBaseRu(rand(ruPrefixes.funny), b, { camelJoin: true, maxLen: 18 }) },
+    { w: 15, fn: (b) => b },
+    { w: 10, fn: (b) => makeCuteRu(b) }
+  ]
+};
+
+function pickWeighted(patterns) {
+  const total = patterns.reduce((s, p) => s + p.w, 0);
+  let r = Math.random() * total;
+  for (const p of patterns) { if ((r -= p.w) < 0) return p.fn; }
+  return patterns[0].fn;
+}
+
+// Выбирает паттерн с учётом целевой длины: для коротких ников чаще
+// «голая основа», для длинных — чаще префикс/суффикс/составное.
+function pickWeightedForLength(patterns, base, minL, maxL) {
+  // Динамически корректируем веса исходя из длины основы.
+  const bl = base ? base.length : 0;
+  const adjusted = patterns.map((p, idx) => {
+    let w = p.w;
+    // Эвристика: первая запись в большинстве стилей — «просто основа»
+    // (в funny — суффикс). Если основа сама уже подходит по длине — оставляем.
+    if (p.fn.length === 1 && bl >= minL && bl <= maxL && idx === 0) w *= 1.5;
+    // Если основа короче минимума — снижаем «просто основа», поднимаем компаунды.
+    if (bl < minL) {
+      if (p.fn.length === 1 && idx === 0) w *= 0.2;
+      else w *= 1.3;
+    }
+    // Если основа длиннее максимума — наоборот, избегаем составных.
+    if (bl > maxL - 2) {
+      if (p.fn.length === 1 && idx === 0) w *= 1.5;
+      else w *= 0.4;
+    }
+    return { w, fn: p.fn };
+  });
+  return pickWeighted(adjusted);
+}
+
+// Генерация одного русского ника с приоритетом читаемости и темы.
+// Если передан lengthRange — пытается уместиться в [min, max].
+function generateRuNick(style, interests, lengthRange) {
+  const ai = interests.length ? interests[Math.floor(Math.random() * interests.length)] : null;
+  const bk = (ai && interestToBase[ai]) ? interestToBase[ai] : 'cool';
+  const bd = ruBases[bk] || ruBases.cool;
+  const sk = getStyleKey(style);
+  const patterns = ruPatterns[sk] || ruPatterns.cool;
+  const minL = lengthRange ? lengthRange[0] : 3;
+  const maxL = lengthRange ? lengthRange[1] : 22;
+
+  for (let attempt = 0; attempt < 60; attempt++) {
+    // 78% — настоящее русское слово, 22% — транслит-форма
+    const useRu = Math.random() < 0.78;
+    const pool = (useRu && bd.ru && bd.ru.length)
+      ? bd.ru
+      : (bd.tr && bd.tr.length ? bd.tr : (bd.ru || []));
+    if (!pool || !pool.length) continue;
+    const base = rand(pool);
+    if (!base || !isReadableRu(base)) continue;
+    const fn = pickWeightedForLength(patterns, base, minL, maxL);
+    const result = fn(base, bd);
+    if (result && isReadableRu(result) && result.length >= minL && result.length <= maxL) {
+      return result[0].toUpperCase() + result.slice(1);
+    }
+  }
+  // Запасной проход без length-фильтра — лишь бы вернуть читаемое
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const pool = (bd.ru && bd.ru.length) ? bd.ru : (bd.tr || []);
+    if (!pool.length) break;
+    const base = rand(pool);
+    if (!base || !isReadableRu(base)) continue;
+    const fn = pickWeighted(patterns);
+    const result = fn(base, bd);
+    if (result && isReadableRu(result)) {
+      return result[0].toUpperCase() + result.slice(1);
+    }
+  }
+  // Последний шанс — просто базовое слово
+  const fpool = (bd.ru && bd.ru.length) ? bd.ru : (bd.tr || ['Ворон']);
+  const fb = rand(fpool) || 'Ворон';
+  return fb[0].toUpperCase() + fb.slice(1);
+}
+
+// ───── Leet speak (numbers replacing letters) ─────
+// en: a=4, e=3, i=1, o=0, s=5, b=8
+const leetMapEn = { 'a':'4','e':'3','i':'1','o':'0','s':'5','b':'8' };
+// ru: и=1, о=0, з=3, б=6, с=5, ч=4
+const leetMapRu = { 'и':'1','о':'0','з':'3','б':'6','с':'5','ч':'4' };
+
+function applyLeet(word, lang) {
+  if (!state.numbers) return word;
+  const map = (lang === 'ru') ? leetMapRu : leetMapEn;
+  // 1 цифра для коротких ников, 2 — для длинных (>=8 символов)
+  const desired = word.length >= 8 ? 2 : 1;
+
+  // Собираем все позиции, где замена возможна
+  const chars = word.split('');
+  const positions = [];
+  for (let i = 0; i < chars.length; i++) {
+    if (map[chars[i].toLowerCase()]) positions.push(i);
+  }
+  // Перемешиваем для случайного выбора позиций
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+  // Заменяем ровно desired (или сколько есть) позиций
+  const replaceCount = Math.min(desired, positions.length);
+  for (let i = 0; i < replaceCount; i++) {
+    const idx = positions[i];
+    chars[idx] = map[chars[idx].toLowerCase()];
+  }
+  let result = chars.join('');
+
+  // Если в нике не нашлось ни одной заменяемой буквы — добавляем цифры
+  // в конец, чтобы гарантировать наличие цифр при включённом параметре.
+  if (replaceCount < desired) {
+    const need = desired - replaceCount;
+    const digits = '0123456789';
+    let suffix = '';
+    for (let i = 0; i < need; i++) {
+      suffix += digits[Math.floor(Math.random() * digits.length)];
+    }
+    result += suffix;
+  }
+  return result;
+}
+
+// ───── Symbol decorations ─────
+// Только симметричные «обёртки» — без вариантов с символом только с одной
+// стороны. Это гарантирует, что обёртка всегда выглядит цельной.
+const symbolStyles = [
+  (nick) => '_' + nick + '_',
+  (nick) => '.' + nick + '.',
+  (nick) => '-' + nick + '-',
+  (nick) => '~' + nick + '~',
+  (nick) => '__' + nick + '__',
+  (nick) => '_.' + nick + '._',
+  (nick) => '.-' + nick + '-.',
+  (nick) => '[' + nick + ']',
+];
+
+function addSymbol(nick) {
+  if (!state.symbols) return nick;
+  return rand(symbolStyles)(nick);
+}
+
+document.querySelectorAll('.tag').forEach(t => {
+  t.addEventListener('click', () => {
+    const v = t.dataset.val;
+    if (state.interests.includes(v)) {
+      state.interests = state.interests.filter(x => x !== v);
+      t.classList.remove('active');
+    } else {
+      state.interests.push(v);
+      t.classList.add('active');
+    }
+  });
+});
+
+function setupPills(groupId, stateKey) {
+  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => {
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#' + groupId + ' .pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      state[stateKey] = p.dataset.val;
+    });
+  });
+}
+setupPills('styleGroup', 'style');
+setupPills('lengthGroup', 'length');
+setupPills('langGroup', 'lang');
+
+document.getElementById('toggleNumbers').addEventListener('click', function() {
+  state.numbers = !state.numbers;
+  this.classList.toggle('on', state.numbers);
+});
+document.getElementById('toggleSymbols').addEventListener('click', function() {
+  state.symbols = !state.symbols;
+  this.classList.toggle('on', state.symbols);
+});
+
+const countVal = document.getElementById('countVal');
+document.getElementById('countMinus').addEventListener('click', () => {
+  if (state.count > 3) { state.count--; countVal.textContent = state.count; }
+});
+document.getElementById('countPlus').addEventListener('click', () => {
+  if (state.count < 15) { state.count++; countVal.textContent = state.count; }
+});
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ════════════════════════════════════════════════════════════════════
+// Расширение английских баз слов: ~1000 дополнительных тематических слов.
+// Все слова — читаемые, односложные/двусложные, по теме интереса.
+// ════════════════════════════════════════════════════════════════════
+const extraWordsEn = {
+  gaming: ['ace','aim','dash','frag','headshot','knockout','clutch','rampage','combo','streak','triple','quad','penta','outlaw','vanguard','spectre','phantom','sentry','marauder','striker','warden','hunter','tracker','reaper','warlord','overlord','viper','outrider','wanderer','seeker','crusader','templar','enforcer','pursuer','breaker','smasher','blitzer','dasher','rusher','glider','flicker','sniper','marksman','duelist','gladius','reaver','bringer','wielder','champion','captain','keeper','warder','herald','victor','arbiter','onslaught','barrage','salvo','warpath','onset','siegelord','clanlord','battlecry','quickdraw','aimbot','crackshot','frenzy','rampager','fenix','dovah','rivenshot','kingmaker','soulsmith','headhunter','battlerage','dreadnought','warmech','overdrive'],
+  anime: ['hayate','kazumi','daisuke','reiji','tora','kuroshiro','arashi','tsubaki','ryoma','akihiko','hiroto','shouta','yusei','natsuki','rinne','asuka','haruka','tomoe','sayaka','rin','suzu','aki','yuna','hana','reina','akane','yoshi','hibiki','hiei','jun','kano','kazu','akemi','airi','chihiro','sakaki','daichi','katsumi','souma','renji','itachi','sasuke','naruto','goku','vegeta','luffy','zoro','sanji','nami','ichigo','rukia','aizen','gintoki','levi','eren','mikasa','seiya','kenshiro','jotaro','dio','spike','ed','alphonse','roy','mustang','riza','envy','greed','wrath','lust','sloth','pride','gluttony','homura','madoka','sayuri','konata','tomo'],
+  music: ['groove','rhythm','tempo','tonic','octave','timbre','crescendo','staccato','legato','marcato','pianissimo','fortissimo','andante','allegro','vivace','adagio','largo','presto','baritone','soprano','contralto','tenor','alto','falsetto','tremolo','vibrato','glissando','portamento','rubato','arpeggio','ostinato','counterpoint','syncopate','polyrhythm','breakbeat','downbeat','upbeat','offbeat','backbeat','blastbeat','riffmaster','bassline','dropbeat','flow','cypher','freestyle','spitfire','wordplay','punchline','onbeat','crunk','disco','funkmaster','soulshine','jazzcat','rocker','rockstar','popstar','indiestar','folkstar','vocalist','soloist','crooner','headliner','wailer','shredder','noodler','jammer','beatbox','turntable','samplehead','wavemaker','tonebender','riffwarrior','beatkeeper','soundforge','toneforge','melodist'],
+  art: ['palette','easel','brushstroke','underpaint','impasto','glazework','linework','crosshatch','stippling','contour','silhouette','tonal','grayscale','duotone','tritone','monochrome','polychrome','luminance','chroma','vignette','collage','frottage','decoupage','sgraffito','tessera','intaglio','aquatint','drypoint','linocut','woodcut','lithograph','serigraph','etching','mezzotint','impression','illuminate','iconograph','daguerreotype','muralist','sketcher','illustrator','engraver','sculptor','potter','ceramist','metalsmith','goldleaf','silverleaf','gilding','enamelist','fresco','tempera','gouache','ink','pencil','charcoal','pastel','crayon','oilpaint','acrylic','watercolor','airbrush','digitalink','linocarver','gildmaster','tonemaster','colorist','illuminator'],
+  tech: ['lambda','sigma','beta','delta','epsilon','gamma','algo','heuristic','tensor','vectorize','rasterize','renderer','compiler','linker','assembler','disassembler','debugger','profiler','interpreter','transpiler','codec','encoder','decoder','parser','lexer','tokenizer','minifier','obfuscator','bundler','watcher','runner','hotswap','livereload','sandbox','virtualbox','container','registry','manifest','metadata','schema','enum','struct','union','tuple','generic','trait','mixin','module','package','namespace','repository','workspace','dependency','injection','observer','singleton','factory','adapter','facade','proxy','decorator','strategy','command','iterator','visitor','mediator','memento','reducer','dispatcher','listener','emitter','subscriber','publisher','endpoint','handler','middleware','controller','router'],
+  nature: ['canyon','tundra','prairie','meadow','glade','heath','marsh','fen','bog','swamp','wetland','wildwood','thicket','copse','thornbush','briar','heather','clover','bluebell','daffodil','tulip','dahlia','rose','lily','iris','peony','poppy','jasmine','magnolia','camellia','wisteria','azalea','rhododendron','hibiscus','marigold','sunflower','daisy','violet','primrose','snowdrop','crocus','hyacinth','larkspur','foxglove','columbine','aster','chrysanthemum','dandelion','clematis','honeysuckle','starling','swallow','warbler','finch','sparrow','thrush','blackbird','robin','jay','magpie','heron','egret','stork','crane','owl','kestrel','falcon','osprey','eagle','vulture','condor','pelican','seagull','albatross','puffin','penguin','flamingo'],
+  space: ['parsec','lightyear','astralink','starfield','starlight','starshade','starshine','starwind','suncatch','sunburst','solarflare','solarwind','helix','spiralarm','milkyway','milkway','andro','perseus','sagittarius','cygnus','orion','draco','lyra','hydra','cetus','phoenix','centaur','crater','olympus','tycho','copernicus','keplerian','newtonian','einstein','tesla','feynman','curie','hubble','webb','voyager','pioneer','sputnik','soyuz','apollo','gemini','mercury','atlas','titan','falcon','dragon','starship','startug','launchpad','liftoff','reentry','splashdown','rendezvous','dockport','airlock','module','capsule','probe','rover','lander','orbiter','flyby','swingby','slingshot','aphelion','perihelion','heliosphere','magnetar','blazar','quasarcore','redshift','blueshift','singularity'],
+  fantasy: ['mythril','adamant','elven','dwarven','draconic','arcanum','aether','radiance','luminance','umbra','penumbra','dreadmark','dawnsong','duskbringer','starfall','moonshade','sunblade','frostbite','flamebrand','stormbringer','thundercaller','runeforged','spellweave','manaforge','soulforge','staffweaver','wandbearer','seerstone','orbstone','keystone','soulgem','heartgem','dragonheart','phoenixfeather','wyrmscale','wyvernscale','beasttamer','witchhunter','warlock','wendigo','banshee','wraithling','revenant','lichlord','necrolord','warwizard','battlemage','spellsworn','bladebound','oathkeeper','vowbreaker','dreadlord','frostlord','flamelord','stormlord','warbringer','hearthkeeper','warden','crusader','templar','inquisitor','reaver','marauder','sellsword','swordsage','bowmaster','arrowstorm','spearcaller','axecleaver','runeblade','spellblade','soulblade','starblade','moonblade','duskblade','dawnblade','hexblade'],
+  sport: ['warmup','cooldown','endurance','agility','reflex','reaction','sprint','pace','tempo','stride','swing','curl','kettlebell','barbell','dumbbell','treadmill','medicineball','jumpline','footwork','crossover','breakaway','fastbreak','layup','jumpshot','threepoint','dunkmaster','dribbler','passer','setter','striker','goalie','keeper','sweeper','defender','midfield','winger','center','forward','captain','rookie','allstar','mvp','goat','underdog','dreamteam','dreamline','dynasty','playmaker','quarterback','runback','homerun','grandslam','triple','double','single','bunt','fielder','catcher','pitcher','shortstop','baseman','outfielder','infielder','referee','umpire','linesman','coach','manager','scout','trainer','therapist','dietitian','agent','sponsor','endorser','contract','transfer','signing','draftpick','firstround','secondround'],
+  cinema: ['cinephile','cineaste','cinemaster','starcast','typecast','overcast','breakshot','closeup','wideshot','crane','dolly','steadicam','gimbal','overshoulder','reverseshot','pov','establish','insert','reaction','match','jumpcut','smashcut','splice','dissolve','wipe','iris','fadein','fadeout','blackout','title','credit','rolling','opening','closing','prologue','epilogue','sequel','prequel','reboot','remake','spinoff','crossover','franchise','trilogy','quadrilogy','anthology','serialized','episodic','procedural','arc','character','conflict','tension','suspense','foreshadow','setup','payoff','reveal','twist','catharsis','denouement','blockbuster','indiehit','sleeper','cult','arthouse','noir','tech','vfx','cgi','greenscreen','bluescreen','keying','compositing','rotoscope','motioncapture','setpiece','stunt'],
+  books: ['inkwell','quillmaster','scribebound','bookbound','tomekeeper','folio','vellum','parchment','manuscript','codexbound','illuminator','typesetter','printer','binder','collator','folder','signature','quire','spine','endpaper','flyleaf','endsheet','headband','tailband','bookmark','dustjacket','slipcase','clamshell','solander','portfolio','dossier','treatise','monograph','compendium','anthology','almanac','grimoire','spellbook','songbook','chapbook','cookbook','journal','diary','memoir','autobio','biography','hagiography','epistle','letter','missive','dispatch','communique','bulletin','gazette','herald','chronicle','annals','register','ledger','tome','volume','edition','imprint','colophon','dedication','epigraph','preface','prologue','foreword','afterword','epilogue','glossary','index','bibliography','appendix','footnote'],
+  cooking: ['umamibomb','flavorbomb','spicebomb','spiceblend','spicemix','spicerack','spicegrinder','peppermill','saltgrinder','herbgarden','farmtable','farmerschoice','marketfresh','seasonal','homemade','handmade','smallbatch','artisan','craft','heritage','traditional','authentic','regional','provincial','sourdough','rosemary','thyme','basil','parsley','coriander','cilantro','dill','tarragon','chervil','chive','mint','oregano','sage','bayleaf','marjoram','lavender','saffron','turmeric','paprika','cumin','cardamom','fenugreek','nutmeg','clove','cinnamon','allspice','pepper','peppercorn','vanilla','cocoa','chocolate','caramel','toffee','butterscotch','praline','marzipan','nougat','fudge','ganache','custard','curd','jelly','jam','preserve','marmalade','compote','chutney','relish','salsa','dip','spread','butter'],
+  travel: ['wanderlust','globetrotter','hitchhiker','backpacker','journeyer','jaunt','outing','excursion','escapade','foray','sojourn','retreat','getaway','vacation','holiday','staycation','daytrip','overnight','weekend','longweekend','passport','visa','customs','immigration','arrival','departure','layover','stopover','transit','transfer','itinerary','routemap','waypoint','marker','signpost','milestone','road','highway','freeway','byway','backroad','dirtroad','footpath','trail','track','path','course','route','line','passage','crossing','intersection','junction','roundabout','overpass','underpass','tunnel','overland','overseas','transatlantic','transpacific','transalpine','transcontinental','overlander','desertrunner','seafarer','mountaineer','climber','hiker','trekker','rambler','strider','pacer','footloose','rovinghand','globewalker','horizon','vista'],
+  cyberpunk: ['neonlit','chromedome','synthskin','synthflesh','synthsoul','wetware','greymatter','firewall','blackice','whiteice','greyice','greyhat','blackhat','whitehat','redhat','breaker','cracker','phisher','spoofer','sniffer','keylogger','rootkit','botnet','zerocool','crashride','runtime','spinout','flatliner','techhead','wirehead','jackpoint','dropzone','runzone','hotzone','warzone','noman','noflesh','noface','noname','ghostcode','ghostnet','ghostkey','ghosthand','razorblade','razorgirl','razorboy','glassjaw','steelfist','ironheart','copperskin','silverwire','goldcircuit','platinumlink','titansynth','obsidiancore','quartzchip','silicondream','siliconvalley','underbelly','dataheist','dataghost','datamuse','datafall','datadrop','datafeed','dataline','datacrime','digitalink','silverline','redline','liveline','deadline','blackline','sunline','moonline','glowline','crashbug'],
+  horror: ['ghoul','gargoyle','wendigo','revenant','wraithborn','undertaker','gravewalker','crypter','tombwalker','bonewalker','soulreaper','soulhunter','soulripper','soultaker','soulbender','soulbinder','soulrender','soulshade','soulslayer','soulwarden','soulwarp','soulwound','soulwraith','soulwoven','soulwrought','soulshroud','soulscry','soulscythe','souldrinker','souldrain','souldread','soulflame','soulfrost','soulfury','soulgrim','soulgrip','soulgloom','soulhollow','soulnight','soulpyre','soulrend','soulroar','soulsever','soulshank','soulsworn','soulthorn','soulthrone','soultide','soulveil','soulwave','soulwind','soulrip','soulsting','soulscar','soulsink','souldoom','soulgrave','soulwail','souldirge','soulknell','dreadwight','duskhowl','duskwail','duskwraith','duskthrone','duskblight','duskcrypt','duskdrain','duskreaper','dusksever','duskwarp','dawnreaper','dawnwarp','dawnwight','dawnwraith','dawndoom','dawnpyre'],
+  mythology: ['valkyrie','einherjar','aesir','vanir','jotunn','dwarflord','elflord','runelord','runesinger','runeshaper','sagasong','sagaweaver','sagaspeaker','battlecaller','thunderling','stormling','frostling','flameling','shadowling','dragonkin','dragonborn','dragonlord','wyrmkin','wyrmlord','phoenixborn','firechild','frostchild','stormchild','seachild','windchild','earthchild','skychild','soulchild','starchild','moonchild','sunchild','dawnchild','duskchild','nightborn','dayborn','starborn','moonborn','sunborn','seaborn','windborn','earthborn','skyborn','flameborn','frostborn','stormborn','shadowborn','lightborn','dreambringer','dreamcaller','dreamshaper','dreamweaver','dreamsinger','dreamhunter','dreamwarden','dreamguard','fateweaver','fatecaller','fatesinger','fateshaper','fatehunter','fatewarden','fateguard','starseer','moonseer','sunseer','duskseer','dawnseer','farseer','wiseone','elder','ancient']
+};
+
+function getWordPool(lang) {
+  const pool = { nouns: [], adjs: [] };
+  const interests = state.interests.length ? state.interests : Object.keys(words);
+  const langKey = (lang === 'ru') ? 'ru' : 'en';
+
+  interests.forEach(key => {
+    if (words[key]) {
+      const w = words[key][langKey] || words[key]['en'];
+      pool.nouns.push(...w);
+      // Подмешиваем расширенные английские базы
+      if (langKey === 'en' && extraWordsEn[key]) {
+        pool.nouns.push(...extraWordsEn[key]);
+      }
+    }
+  });
+
+  const adj = adjectives[state.style] || adjectives['cool'];
+  pool.adjs = [...(adj[langKey] || adj['en'])];
+
+  if (!pool.nouns.length) pool.nouns = langKey === 'ru'
+    ? ['тень','призрак','шторм','клинок','звезда','огонь','буря']
+    : ['shadow','void','ghost','storm','pixel','blade','nova'];
+  if (!pool.adjs.length) pool.adjs = langKey === 'ru'
+    ? ['тёмный','быстрый','дикий','острый','ледяной']
+    : ['dark','swift','iron','cold','wild'];
+
+  return pool;
+}
+
+// ───── Style-specific nickname generators ─────
+
+const funnyExtrasEn = ['inator','oodle','zilla','meister','kins','poo','doo','nator','borg','bot','lol','xd','gg'];
+const cuteExtrasEn  = ['ie','sy','kins','puff','pop','bun','berry','bloom','petal','bell','drop','spark'];
+
+function generateOne(used) {
+  const langKey = state.lang === 'ru' ? 'ru' : 'en';
+  const style = state.style;
+  const lengthRange = { short: [4,8], medium: [6,13], long: [10,20] }[state.length];
+
+  let nick = '';
+  let attempts = 0;
+
+  // ── РУССКИЙ ЯЗЫК: новая система на основе ник-основ ──
+  if (langKey === 'ru') {
+    // Основной проход: ищем ник, который попадает в диапазон длины
+    while (attempts < 80) {
+      attempts++;
+      let candidate = generateRuNick(style, state.interests, lengthRange);
+      if (state.numbers) candidate = applyLeet(candidate, 'ru');
+      if (!candidate) continue;
+      if (candidate.length >= lengthRange[0] && candidate.length <= lengthRange[1] && !used.has(candidate)) {
+        nick = addSymbol(candidate);
+        break;
+      }
+    }
+    // Если так и не получилось — собираем безопасный ник через smartJoinRu
+    if (!nick) {
+      const interest = state.interests.length ? state.interests[0] : null;
+      const bKey = (interest && interestToBase[interest]) ? interestToBase[interest] : 'cool';
+      const bData = ruBases[bKey] || ruBases.cool;
+      const sk = getStyleKey(style);
+      const sufs = ruSuffixes[sk] || ruSuffixes.universal;
+      const prefs = ruPrefixes[sk] || ruPrefixes.universal;
+      const basePool = (bData.ru && bData.ru.length) ? bData.ru : (bData.tr || ruBases.cool.ru);
+      let fb = null;
+      for (let i = 0; i < 40 && !fb; i++) {
+        const b = rand(basePool);
+        if (!b || !isReadableRu(b)) continue;
+        // Если нужен длинный ник — пробуем с префиксом, иначе с суффиксом
+        if (b.length < lengthRange[0]) {
+          fb = joinAdjBaseRu(rand(prefs), b, { camelJoin: true, maxLen: 22 })
+            || smartJoinRu(b, rand(sufs), { maxLen: 22 });
+        } else if (b.length > lengthRange[1]) {
+          continue;
+        } else {
+          fb = b;
+        }
+      }
+      if (!fb) fb = rand(basePool) || 'Ворон';
+      fb = fb[0].toUpperCase() + fb.slice(1);
+      if (state.numbers) fb = applyLeet(fb, 'ru');
+      nick = addSymbol(fb);
+    }
+    return nick;
+  }
+
+  // ── АНГЛИЙСКИЙ ЯЗЫК: старая логика ──
+  const pool = getWordPool(langKey);
+
+  // Стилевые наборы префиксов/суффиксов
+  const enPrefs = prefixesEnByStyle[style] || prefixesEnByStyle.cool;
+  const enSufs  = suffixesEnByStyle[style] || suffixesEnByStyle.cool;
+
+  while (attempts < 40) {
+    attempts++;
+    let base = '';
+
+    const noun = rand(pool.nouns);
+    const adj  = rand(pool.adjs);
+    const noun2 = rand(pool.nouns);
+
+    if (style === 'funny') {
+      const extras = funnyExtrasEn;
+      const p = Math.floor(Math.random() * 6);
+      switch(p) {
+        case 0: base = capitalize(noun) + rand(extras); break;
+        case 1: base = capitalize(adj) + rand(extras); break;
+        case 2: base = rand(enPrefs) + capitalize(noun); break;
+        case 3: base = capitalize(noun) + rand(enSufs); break;
+        case 4: base = capitalize(adj) + capitalize(noun); break;
+        case 5: base = capitalize(noun) + capitalize(noun2); break;
+      }
+    } else if (style === 'cute') {
+      const extras = cuteExtrasEn;
+      const p = Math.floor(Math.random() * 5);
+      switch(p) {
+        case 0: base = capitalize(noun) + rand(extras); break;
+        case 1: base = rand(enPrefs) + capitalize(noun); break;
+        case 2: base = capitalize(adj) + capitalize(noun); break;
+        case 3: base = capitalize(noun) + rand(enSufs); break;
+        case 4: base = capitalize(adj) + rand(extras); break;
+      }
+    } else if (style === 'mysterious') {
+      const p = Math.floor(Math.random() * 5);
+      switch(p) {
+        case 0: base = capitalize(adj) + capitalize(noun); break;
+        case 1: base = rand(enPrefs) + capitalize(noun); break;
+        case 2: base = capitalize(noun) + capitalize(noun2); break;
+        case 3: base = capitalize(noun); break;
+        case 4: base = capitalize(noun) + rand(enSufs); break;
+      }
+    } else if (style === 'epic') {
+      const p = Math.floor(Math.random() * 5);
+      switch(p) {
+        case 0: base = capitalize(adj) + capitalize(noun); break;
+        case 1: base = rand(enPrefs) + capitalize(noun); break;
+        case 2: base = capitalize(noun) + capitalize(noun2); break;
+        case 3: base = capitalize(noun) + rand(enSufs); break;
+        case 4: base = capitalize(noun); break;
+      }
+    } else {
+      const p = Math.floor(Math.random() * 6);
+      switch(p) {
+        case 0: base = capitalize(adj) + capitalize(noun); break;
+        case 1: base = capitalize(noun) + rand(enSufs); break;
+        case 2: base = rand(enPrefs) + capitalize(noun); break;
+        case 3: base = capitalize(noun); break;
+        case 4: base = capitalize(noun) + capitalize(noun2); break;
+        case 5: base = capitalize(adj) + capitalize(noun) + rand(enSufs); break;
+      }
+    }
+
+    let candidate = base;
+    if (state.numbers) candidate = applyLeet(candidate, langKey);
+
+    // Лёгкий фоно-фильтр: не более 4 согласных подряд
+    const lower = candidate.toLowerCase();
+    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(lower)) continue;
+    // Не допускаем повтор одной и той же согласной 3+ раза подряд
+    if (/([bcdfghjklmnpqrstvwxz])\1\1/.test(lower)) continue;
+    // Должна быть хотя бы одна гласная
+    if (!/[aeiouy]/.test(lower)) continue;
+
+    if (candidate.length >= lengthRange[0] && candidate.length <= lengthRange[1] && !used.has(candidate)) {
+      nick = addSymbol(candidate);
+      break;
+    }
+  }
+
+  if (!nick) {
+    const noun = rand(pool.nouns);
+    const adj = rand(pool.adjs);
+    let base = capitalize(adj) + capitalize(noun);
+    if (state.numbers) base = applyLeet(base, langKey);
+    nick = addSymbol(base);
+  }
+
+  return nick;
+}
+
+const vibesByStyle = {
+  cool:       ['Резкий и запоминающийся','Звучит мощно','Читается влёт','Чистый и современный','Стильный и необычный','Зайдёт в любой игре','Редкая комбинация','Звучит дерзко','Будет выбиваться из толпы','Короткий и ёмкий'],
+  mysterious: ['Загадочная аура','Тёмная энергия','Будут спрашивать значение','Несёт сильную энергию','Интригующий образ','Атмосферный ник','Скрытый смысл','Ощущение тайны','Притягивает взгляд','Оставляет след'],
+  cute:       ['Мягкий и приятный','Запоминается сразу','Идеально для профиля','Лёгкий и воздушный','Улыбка с первого взгляда','Тёплое звучание','Нежный стиль','Приятно на слух','Дружелюбный образ','Светлая энергия'],
+  epic:       ['Легенда с первого взгляда','Огонь без компромиссов','Звучит мощно','Эпический масштаб','Несёт сильную энергию','Запоминается с первого раза','Отражает характер','Максимально крутой','Уникальное звучание','Мифический резонанс'],
+  funny:      ['Не дадут скучать','Все запомнят','Улыбка гарантирована','Сломает ожидания','Мем в одном слове','Будут переспрашивать','Хаотично и прекрасно','Странно, но работает','Легенда своего рода','Непредсказуемый стиль'],
+};
+
+function getVibe() {
+  const pool = vibesByStyle[state.style] || vibesByStyle.cool;
+  return rand(pool);
+}
+
+function generate() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Генерирую…';
+
+  setTimeout(() => {
+    const used = new Set();
+    const results = [];
+
+    for (let i = 0; i < state.count; i++) {
+      const nick = generateOne(used);
+      used.add(nick);
+      results.push({ nick, vibe: getVibe() });
+    }
+
+    renderResults(results);
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Сгенерировать ещё';
+  }, 400);
+}
+
+function renderResults(items) {
+  const wrap = document.getElementById('resultsWrap');
+  wrap.innerHTML = `
+    <div class="results-card">
+      <div class="results-header">
+        <span class="results-title">Результаты</span>
+        <span class="results-count">${items.length} никнеймов</span>
+      </div>
+      <div class="nick-list" id="nickList"></div>
+    </div>`;
+
+  const list = document.getElementById('nickList');
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'nick-item stagger-' + Math.min(i + 1, 10);
+    const nickSafe = escHtml(item.nick);
+    div.innerHTML =
+      `<div><div class="nick-name">${nickSafe}</div></div>` +
+      `<div class="nick-actions">` +
+        `<span class="nick-style-badge">${escHtml(item.vibe)}</span>` +
+        `<button class="copy-btn" onclick="copyNick(this,'${item.nick.replace(/'/g,"\\'")}')">COPY</button>` +
+      `</div>`;
+    list.appendChild(div);
+  });
+
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyNick(btn, nick) {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = nick;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  };
+  const success = () => {
+    btn.textContent = '✓ OK';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(nick).then(success).catch(() => { fallback(); success(); });
+  } else {
+    fallback();
+    success();
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
